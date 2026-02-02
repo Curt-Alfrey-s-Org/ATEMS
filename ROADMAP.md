@@ -294,7 +294,7 @@ Based on analysis of the Rankings Bot codebase, these features should be added t
 ## 11. Deployment & Fixes
 
 - [x] **Deploy prep** — gunicorn in requirements; ProxyFix for https behind nginx; deploy.sh script; fix systemd Type
-- [ ] **Deploy to website** — Deploy ATEMS to production (e.g. VPS, nginx, gunicorn; see NGINX_DEPLOYMENT.md)
+- [ ] **Deploy to website** — web-sites-server/ added (nginx-atems.conf, atems.service, DEPLOY_NOW.md, deploy-to-server.sh); same pattern as rankings-bot
 - [ ] **Debug** — Run and fix issues in deployed or target environment
 - [ ] **Fix HTTP** — Resolve HTTP/HTTPS, redirects, headers, or mixed-content issues
 - [ ] **Fix API** — Resolve API connectivity, CORS, base URL, or endpoint issues in production
