@@ -51,3 +51,6 @@ pytest-cov==7.0.0
 
 # Development
 flask-shell==0.1.8
+
+# Production (gunicorn for deployment)
+gunicorn==23.0.0

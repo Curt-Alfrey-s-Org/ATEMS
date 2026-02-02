@@ -1,4 +1,5 @@
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from extensions import db, login_manager, admin, migrate, init_app
 from models.user import User
 import os
@@ -47,7 +48,11 @@ def create_app():
     
     # Set the debug mode from environment variable
     app.config["DEBUG"] = os.getenv("DEBUG", "False").lower() == "true"
-    
+
+    # Trust X-Forwarded-* headers when behind nginx (fixes https URLs, correct Host)
+    if not app.config["DEBUG"] or os.getenv("USE_PROXY_FIX", "").lower() == "true":
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     # Initialize extensions (init_app does db, login_manager, admin, migrate)
     init_app(app)
 

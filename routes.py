@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
 from forms import CheckInOutForm
 from models import User, Tools, CheckoutHistory
@@ -29,6 +29,18 @@ def index():
 def splash():
     """Professional splash screen for demo site."""
     return render_template('splash.html')
+
+
+@bp.route('/app')
+@bp.route('/app/<path:path>')
+@login_required
+def serve_spa(path=None):
+    """Serve React SPA from static/app/ (Phase 7 frontend)."""
+    import os
+    root = os.path.join(os.path.dirname(__file__), 'static', 'app')
+    if path and os.path.exists(os.path.join(root, path)):
+        return send_from_directory(root, path)
+    return send_from_directory(root, 'index.html')
 
 
 @bp.route('/dashboard')

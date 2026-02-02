@@ -28,6 +28,9 @@
         <a href="{{ url_for('main.dashboard') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
           <span class="text-lg">📊</span> Dashboard
         </a>
+        <a href="/app" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors">
+          <span class="text-lg">⚛️</span> React App
+        </a>
         <a href="{{ url_for('main.checkinout') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors {% if request.endpoint == 'main.checkinout' %}active{% endif %}">
           <span class="text-lg">🔧</span> Check In/Out
         </a>

@@ -4,7 +4,7 @@
 
 1. Copy `ATEMS.desktop` to your Desktop:
    ```bash
-   cp /home/n4s1/rankings-bot/ATEMS/ATEMS.desktop ~/Desktop/
+   cp /home/n4s1/ATEMS/ATEMS.desktop ~/Desktop/
    ```
 
 2. Allow launching (Linux Mint / Nautilus):

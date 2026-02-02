@@ -110,7 +110,7 @@ This document summarizes the complete demo site setup for ATEMS.
 ## 🚀 Quick Start (Local Development)
 
 ```bash
-cd /home/n4s1/rankings-bot/ATEMS
+cd /home/n4s1/ATEMS
 
 # Activate virtual environment
 source .venv/bin/activate

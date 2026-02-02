@@ -94,7 +94,7 @@
 
 ### Start the Application
 ```bash
-cd /home/n4s1/rankings-bot/ATEMS
+cd /home/n4s1/ATEMS
 source .venv/bin/activate
 python run.py
 # OR

@@ -1,63 +1,83 @@
-# ATEMS — Plan (Most Important First)
+# ATEMS — Plan for Tomorrow (Higher Impact, Moderate Effort)
 
-Complete in this order. Item 0 done; then the five features by impact.
-
----
-
-## 0. Move ATEMS to its own repo (outside rankings-bot) — DONE
-
-- **Goal:** ATEMS lives in its own directory/repo.
-- **Tasks:** [x] Clone to ~/ATEMS; [x] tests pass; [x] desktop paths updated; [ ] optional: remove from rankings-bot.
+Complete these items in order. Start with moving ATEMS to its own repo; then the five feature items.
 
 ---
 
-## 1. "Return by" date + overdue-returns list/reminders — DONE
+## 0. Move ATEMS to its own repo (outside rankings-bot)
 
-- **Goal:** Set return-by date at checkout; list overdue returns; optional reminders.
-- **Tasks:** [x] return_by field; [x] dashboard + report "Overdue Returns"; [ ] optional email reminders.
-- **Reference:** COMPETITOR_RESEARCH.md — "Due dates & reminders".
+- **Goal:** ATEMS should live in its own directory/repo, not inside the rankings-bot folder.
+- **Tasks:**
+  - [x] Clone or copy the ATEMS repo to a separate location (e.g. `~/ATEMS` or `~/projects/ATEMS`).
+  - [x] Confirm it runs and tests pass from the new location.
+  - [x] Update desktop shortcuts / start scripts if they point at the old path.
+  - [x] Moved ATEMS to `/home/n4s1/ATEMS` (canonical location).
 
 ---
 
-## 2. Email reminders for calibration due/overdue — DONE
+## 1. Barcode/QR scan at checkout
+
+- **Goal:** Scan tool ID and badge at checkout (e.g. handheld scanner or camera).
+- **Tasks:**
+  - [ ] Add barcode/QR input on checkout form (camera or scanner input).
+  - [ ] Parse scanned value into tool ID and/or user badge.
+  - [ ] Optional: support "scan tool then scan badge" flow.
+- **Reference:** COMPETITOR_RESEARCH.md — "Barcode / QR" in Check-in/out and Mobile & scanning.
+
+---
+
+## 2. Email reminders for calibration due/overdue
 
 - **Goal:** Configurable email reminders when calibration is due soon or overdue.
-- **Tasks:** [x] Env CALIBRATION_REMIND_DAYS, MAIL_*; [x] send_calibration_reminders(); [x] Settings → Send now; [x] cron example.
-- **Reference:** COMPETITOR_RESEARCH.md — "Email (or SMS) alerts".
+- **Tasks:**
+  - [ ] Add settings for "remind X days before due" and "remind when overdue" (e.g. in Settings or env).
+  - [ ] Background job or scheduled task that finds tools due/overdue and sends emails.
+  - [ ] Email content: tool ID, description, due date, link to tool/calibration report.
+- **Reference:** COMPETITOR_RESEARCH.md — "Email (or SMS) alerts" in Calibration & maintenance.
 
 ---
 
-## 3. Barcode/QR scan at checkout — DONE
+## 3. "Return by" date on checkout and overdue-returns list/reminders
 
-- **Goal:** Scan tool ID and badge at checkout (camera or scanner).
-- **Tasks:** [x] Scan input (keyboard wedge); [x] /api/user-by-badge; [x] camera scan (html5-qrcode); [x] scan-tool-then-badge flow.
-- **Reference:** COMPETITOR_RESEARCH.md — "Barcode / QR".
+- **Goal:** Set return-by date at checkout; list overdue returns and optionally remind.
+- **Tasks:**
+  - [ ] Add "return by" date field to checkout (model + form + UI).
+  - [ ] Dashboard or report: "Overdue returns" list (checked out past return-by).
+  - [ ] Optional: email reminders for overdue returns (reuse pattern from calibration reminders).
+- **Reference:** COMPETITOR_RESEARCH.md — "Due dates & reminders" in Check-in/out.
 
 ---
 
-## 4. Export reports (PDF and/or Excel) — DONE
+## 4. Export reports (PDF and/or Excel)
 
 - **Goal:** Export report data as PDF and/or Excel, not only CSV.
-- **Tasks:** [x] PDF export (reportlab); [x] Excel export (openpyxl); [x] Export PDF/Excel buttons on Reports.
-- **Reference:** COMPETITOR_RESEARCH.md — "Export – PDF, Excel, CSV".
+- **Tasks:**
+  - [ ] Add PDF export for at least one report (e.g. Tool Usage or Calibration).
+  - [ ] Add Excel (.xlsx) export for same reports (e.g. openpyxl or xlsxwriter).
+  - [ ] Expose "Export PDF" / "Export Excel" on Reports page next to existing CSV.
+- **Reference:** COMPETITOR_RESEARCH.md — "Export – PDF, Excel, CSV" in Reporting & analytics.
 
 ---
 
-## 5. CSV/Excel import for tools (and optionally users) — DONE
+## 5. CSV/Excel import for tools (and optionally users)
 
 - **Goal:** Bulk import tools from CSV or Excel; optionally users.
-- **Tasks:** [x] Required: tool_id_number, tool_name; [x] /import page + preview + import APIs; [ ] optional: user import.
-- **Reference:** COMPETITOR_RESEARCH.md — bulk import.
+- **Tasks:**
+  - [ ] Define required columns for tools (e.g. tool_id, description, category, calibration_due).
+  - [ ] Admin or dedicated page: "Import tools" with file upload (CSV and/or .xlsx).
+  - [ ] Validate rows, show preview/errors, then insert or update tools.
+  - [ ] Optional: same flow for users (username, role, email, etc.).
+- **Reference:** COMPETITOR_RESEARCH.md — bulk data and reporting/import patterns.
 
 ---
 
-## Quick checklist
+## Quick checklist (tomorrow)
 
 | # | Feature | Status |
 |---|---------|--------|
-| 0 | Move ATEMS to its own repo | ☑ |
-| 1 | Return-by date + overdue-returns list/reminders | ☑ |
-| 2 | Email reminders (calibration due/overdue) | ☑ |
-| 3 | Barcode/QR scan at checkout | ☑ |
-| 4 | Export reports (PDF and/or Excel) | ☑ |
-| 5 | CSV/Excel import for tools (and optionally users) | ☑ |
+| 0 | Move ATEMS to its own repo (outside rankings-bot) | ☑ |
+| 1 | Barcode/QR scan at checkout | ☐ |
+| 2 | Email reminders (calibration due/overdue) | ☐ |
+| 3 | Return-by date + overdue-returns list/reminders | ☐ |
+| 4 | Export reports (PDF and/or Excel) | ☐ |
+| 5 | CSV/Excel import for tools (and optionally users) | ☐ |

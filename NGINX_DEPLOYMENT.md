@@ -75,7 +75,7 @@ Description=ATEMS - Advanced Tool & Equipment Management System
 After=network.target
 
 [Service]
-Type=notify
+Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/atems

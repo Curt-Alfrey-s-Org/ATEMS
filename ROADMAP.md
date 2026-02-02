@@ -265,7 +265,7 @@ Seed tools from major tool-using industries to find bugs during check-in/check-o
 Based on analysis of the Rankings Bot codebase, these features should be added to ATEMS:
 
 ### High Priority (Phase 7 - Modern Frontend)
-- [ ] **React + TypeScript + Vite Frontend** - Replace Jinja templates with SPA
+- [x] **React + TypeScript + Vite Frontend** - Scaffold: frontend/ with Dashboard, StatCards, Sidebar; served at /app
 - [ ] **Draggable Dashboard Widgets** - Allow users to customize dashboard layout (like DraggableDashboard.tsx)
 - [ ] **Advanced Log Viewer** - Multi-filter, sortable, auto-refresh with view presets
 - [ ] **Settings Presets** - One-click preset configurations for different use cases
@@ -293,6 +293,7 @@ Based on analysis of the Rankings Bot codebase, these features should be added t
 
 ## 11. Deployment & Fixes
 
+- [x] **Deploy prep** — gunicorn in requirements; ProxyFix for https behind nginx; deploy.sh script; fix systemd Type
 - [ ] **Deploy to website** — Deploy ATEMS to production (e.g. VPS, nginx, gunicorn; see NGINX_DEPLOYMENT.md)
 - [ ] **Debug** — Run and fix issues in deployed or target environment
 - [ ] **Fix HTTP** — Resolve HTTP/HTTPS, redirects, headers, or mixed-content issues
