@@ -8,9 +8,9 @@ Complete these items in order. Start with moving ATEMS to its own repo; then the
 
 - **Goal:** ATEMS should live in its own directory/repo, not inside the rankings-bot folder.
 - **Tasks:**
-  - [ ] Clone or copy the ATEMS repo to a separate location (e.g. `~/ATEMS` or `~/projects/ATEMS`).
-  - [ ] Confirm it runs and tests pass from the new location.
-  - [ ] Update desktop shortcuts / start scripts if they point at the old path.
+  - [x] Clone or copy the ATEMS repo to a separate location (e.g. `~/ATEMS` or `~/projects/ATEMS`).
+  - [x] Confirm it runs and tests pass from the new location.
+  - [x] Update desktop shortcuts / start scripts if they point at the old path.
   - [ ] Optionally remove or archive ATEMS from inside `rankings-bot` so there’s a single canonical copy.
 
 ---
@@ -75,7 +75,7 @@ Complete these items in order. Start with moving ATEMS to its own repo; then the
 
 | # | Feature | Status |
 |---|---------|--------|
-| 0 | Move ATEMS to its own repo (outside rankings-bot) | ☐ |
+| 0 | Move ATEMS to its own repo (outside rankings-bot) | ☑ |
 | 1 | Barcode/QR scan at checkout | ☐ |
 | 2 | Email reminders (calibration due/overdue) | ☐ |
 | 3 | Return-by date + overdue-returns list/reminders | ☐ |
