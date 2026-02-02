@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}System Logs{% endblock %}
+{% block page_title %}System Logs{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Controls -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- View Presets -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">View Preset</label>
+        <select id="viewPreset" class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="all">All Logs</option>
+          <option value="errors">Errors Only</option>
+          <option value="warnings">Warnings</option>
+          <option value="info">Info</option>
+          <option value="debug">Debug</option>
+          <option value="critical">Critical</option>
+          <option value="tools">Tool Operations</option>
+        </select>
+      </div>
+
+      <!-- Level Filter -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Level</label>
+        <select id="levelFilter" class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">All Levels</option>
+          <option value="DEBUG">Debug</option>
+          <option value="INFO">Info</option>
+          <option value="WARNING">Warning</option>
+          <option value="ERROR">Error</option>
+          <option value="CRITICAL">Critical</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Search</label>
+        <input type="text" id="searchText" placeholder="Search logs..." class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <!-- Line Limit -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Lines</label>
+        <select id="lineLimit" class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="100">100</option>
+          <option value="250" selected>250</option>
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+          <option value="2000">2000</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-3 mt-4">
+      <button id="refreshBtn" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+        🔄 Refresh
+      </button>
+      <button id="clearBtn" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium transition-colors">
+        🗑️ Clear Display
+      </button>
+      <label class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 cursor-pointer hover:bg-slate-600 transition-colors">
+        <input type="checkbox" id="autoRefresh" class="w-4 h-4">
+        <span>Auto-refresh (5s)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Log Display -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+      <h3 class="font-semibold text-slate-200">Log Entries</h3>
+      <span id="logCount" class="text-sm text-slate-400">0 entries</span>
+    </div>
+    <div class="overflow-x-auto">
+      <pre id="logDisplay" class="p-6 text-xs md:text-sm font-mono text-slate-300 whitespace-pre-wrap bg-slate-900/50 min-h-[400px] max-h-[800px] overflow-y-auto">
+Loading logs...
+      </pre>
+    </div>
+  </div>
+</div>
+
+<script>
+// Log viewer state
+let autoRefreshInterval = null;
+const LOG_COLORS = {
+  'DEBUG': 'text-slate-400',
+  'INFO': 'text-blue-400',
+  'WARNING': 'text-yellow-400',
+  'ERROR': 'text-red-400',
+  'CRITICAL': 'text-red-600 font-bold'
+};
+
+// View presets
+const VIEW_PRESETS = {
+  'all': {},
+  'errors': { level: 'ERROR' },
+  'warnings': { level: 'WARNING' },
+  'info': { level: 'INFO' },
+  'debug': { level: 'DEBUG' },
+  'critical': { level: 'CRITICAL' },
+  'tools': { search: 'tool' }
+};
+
+// Load preferences from localStorage
+function loadPreferences() {
+  const prefs = JSON.parse(localStorage.getItem('atems_log_prefs') || '{}');
+  if (prefs.lineLimit) document.getElementById('lineLimit').value = prefs.lineLimit;
+  if (prefs.autoRefresh) document.getElementById('autoRefresh').checked = prefs.autoRefresh;
+}
+
+// Save preferences to localStorage
+function savePreferences() {
+  const prefs = {
+    lineLimit: document.getElementById('lineLimit').value,
+    autoRefresh: document.getElementById('autoRefresh').checked
+  };
+  localStorage.setItem('atems_log_prefs', JSON.stringify(prefs));
+}
+
+// Fetch and display logs
+async function fetchLogs() {
+  const limit = document.getElementById('lineLimit').value;
+  const level = document.getElementById('levelFilter').value;
+  const search = document.getElementById('searchText').value;
+  
+  try {
+    let url = `/api/logs?limit=${limit}`;
+    if (level) url += `&level=${level}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch logs');
+    
+    const data = await response.json();
+    displayLogs(data.logs);
+    document.getElementById('logCount').textContent = `${data.count} entries`;
+  } catch (error) {
+    document.getElementById('logDisplay').textContent = `Error loading logs: ${error.message}`;
+  }
+}
+
+// Display logs with color coding
+function displayLogs(logs) {
+  const display = document.getElementById('logDisplay');
+  if (!logs || logs.length === 0) {
+    display.textContent = 'No log entries found.';
+    return;
+  }
+  
+  let html = '';
+  logs.forEach(log => {
+    const color = LOG_COLORS[log.level] || 'text-slate-300';
+    const time = new Date(log.timestamp).toLocaleString();
+    html += `<div class="${color}">${time} [${log.level}] ${log.message}</div>`;
+  });
+  
+  display.innerHTML = html;
+}
+
+// Apply view preset
+function applyPreset(presetName) {
+  const preset = VIEW_PRESETS[presetName];
+  if (!preset) return;
+  
+  // Reset filters
+  document.getElementById('levelFilter').value = '';
+  document.getElementById('searchText').value = '';
+  
+  // Apply preset filters
+  if (preset.level) document.getElementById('levelFilter').value = preset.level;
+  if (preset.search) document.getElementById('searchText').value = preset.search;
+  
+  fetchLogs();
+}
+
+// Event listeners
+document.getElementById('viewPreset').addEventListener('change', (e) => {
+  applyPreset(e.target.value);
+});
+
+document.getElementById('levelFilter').addEventListener('change', fetchLogs);
+document.getElementById('searchText').addEventListener('input', fetchLogs);
+document.getElementById('lineLimit').addEventListener('change', () => {
+  savePreferences();
+  fetchLogs();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', fetchLogs);
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('logDisplay').textContent = '';
+  document.getElementById('logCount').textContent = '0 entries';
+});
+
+document.getElementById('autoRefresh').addEventListener('change', (e) => {
+  savePreferences();
+  if (e.target.checked) {
+    autoRefreshInterval = setInterval(fetchLogs, 5000);
+  } else {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
+  }
+});
+
+// Initialize
+loadPreferences();
+fetchLogs();
+
+// Start auto-refresh if enabled
+if (document.getElementById('autoRefresh').checked) {
+  autoRefreshInterval = setInterval(fetchLogs, 5000);
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+});
+</script>
+{% endblock %}

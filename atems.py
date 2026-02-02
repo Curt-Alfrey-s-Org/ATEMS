@@ -14,10 +14,22 @@ def load_user(user_id):
 
 def create_app():
     app = Flask(__name__)
-    
-    # Configure logging
-    logging.basicConfig(level=logging.DEBUG if os.getenv("DEBUG", "False").lower() == "true" else logging.INFO)
+
+    # Configure logging: console + file for error review
+    log_level = logging.DEBUG if os.getenv("DEBUG", "False").lower() == "true" else logging.INFO
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    logging.basicConfig(level=log_level, format=log_format)
     logger = logging.getLogger(__name__)
+    try:
+        log_dir = os.path.dirname(os.path.abspath(__file__))
+        log_file = os.path.join(log_dir, "atems.log")
+        fh = logging.FileHandler(log_file, encoding="utf-8")
+        fh.setLevel(log_level)
+        fh.setFormatter(logging.Formatter(log_format))
+        logging.getLogger().addHandler(fh)
+    except Exception as _e:
+        import sys
+        print(f"Could not add atems.log handler: {_e}", file=sys.stderr)
     
     try:
         # Set the database URI from environment variable
@@ -36,14 +48,46 @@ def create_app():
     # Set the debug mode from environment variable
     app.config["DEBUG"] = os.getenv("DEBUG", "False").lower() == "true"
     
-    # Initialize extensions
-    db.init_app(app)
-    login_manager.init_app(app)
-    migrate.init_app(app, db)
-    admin.init_app(app)
+    # Initialize extensions (init_app does db, login_manager, admin, migrate)
     init_app(app)
-    
+
+    # Ensure all tables exist (fixes "no such table" when using a new or different database)
+    with app.app_context():
+        from models import Tools, CheckoutHistory  # ensure all models registered for create_all
+        db.create_all()
+        # If no users exist, create default admin so you can log in
+        if User.query.count() == 0:
+            admin_user = User(
+                first_name="System",
+                last_name="Administrator",
+                username="admin",
+                email="admin@example.com",
+                badge_id="ADMIN001",
+                phone="5550000000",
+                department="ATEMS",
+                role="admin",
+                supervisor_username="admin",
+                supervisor_email="admin@example.com",
+                supervisor_phone="5550000000",
+            )
+            admin_user.set_password("admin123")
+            db.session.add(admin_user)
+            db.session.commit()
+            logger.info("Created default admin user (admin / admin123). Change password after first login.")
+
     logger.info("Application initialized successfully.")
+
+    # Register blueprints
+    from routes import bp
+    app.register_blueprint(bp)
+
+    # Run startup self-tests (log to atems.log for error review)
+    try:
+        from selftest.startup import run_startup_selftests
+        run_startup_selftests(app=app, logger=logger)
+    except Exception as e:
+        logger.warning(f"[SELFTEST] Startup self-tests failed: {e}")
+
     return app
 
 app = create_app()

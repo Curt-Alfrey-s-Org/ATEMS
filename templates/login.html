@@ -1,118 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<!-- login.html -->
-
-{% extends "common.html" %}
-
+{% extends "base_login.html" %}
 {% block content %}
+<div class="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-2xl shadow-2xl p-8">
+  <div class="text-center mb-8">
+    <img src="{{ url_for('static', filename='images/blueWrench.jpg') }}" alt="ATEMS" class="w-16 h-16 rounded-xl mx-auto mb-4 object-cover">
+    <h1 class="text-2xl font-bold text-sky-400">ATEMS</h1>
+    <p class="text-slate-400 text-sm mt-1">Tool & Equipment Management</p>
+  </div>
 
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="mb-6 space-y-2">
+    {% for category, message in messages %}
+    <div class="px-4 py-3 rounded-lg text-sm {% if category == 'success' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30{% elif category == 'error' %}bg-red-500/20 text-red-400 border border-red-500/30{% else %}bg-sky-500/20 text-sky-400 border border-sky-500/30{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
 
-    <!-- Login Form -->
-    <form action="{{ url_for('routes.login') }}" method="post">
-        {{ form.hidden_tag() }}
-        {{ form.csrf_token }}
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit" id="submit-login-button">Login</button>
-    </form>
-       
-
-
-<div class="parent-div">
-    
+  <form action="{{ url_for('main.login') }}" method="post" class="space-y-5">
+    {% if config.WTF_CSRF_ENABLED %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>{% endif %}
     <div>
-        <img src="{{ url_for('static', filename='images/fluke.jpg') }}" alt="fluke" width="400" height="240" style="padding: 25px; margin: 25px;">
-        <img src="{{ url_for('static', filename='images/Beamex.jpg') }}" alt="Beamex" width="400" height="240" style="padding: 25px; margin: 25px;">
-        <img src="{{ url_for('static', filename='images/calibrated_tools.jpg') }}" alt="calibrated_tools" width="400" height="240" style="padding: 25px; margin: 25px;">
-        <img src="{{ url_for('static', filename='images/calibration_lab_equip.jpg') }}" alt="calibration_lab_equip" width="400" height="240" style="padding: 25px; margin: 25px;">
+      <label for="username" class="block text-sm font-medium text-slate-300 mb-2">Username</label>
+      <input type="text" id="username" name="username" required autofocus autocomplete="username"
+             class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+             placeholder="Enter username">
     </div>
-    
-
-    <div class="info-box">
-        <h3>Professional Inventory Control Software for Technicians</h3>
-        <hr style="border-top: 2px double;">
-
-        <ul class="info-list">
-            <li class="info-item">Automated Accountability:
-            <hr style="border-top: 2px double;">
-                <ul>
-                    <li>Streamlined email reminders are seamlessly integrated to prompt customers for timely check-ins, ensuring optimal availability for concurrent tasks.</li>
-                    <li>Automated report generation and email notifications preemptively address tool and equipment calibration, averting potential delays in job execution.</li>
-                </ul>
-            </li>
-            
-    <!-- Spacer -->
-    <div style="height: 25px;"></div>
-
-            <li class="info-item">Comprehensive Tracking:
-            <hr style="border-top: 2px double;">
-                <ul>
-                    <li>Utilize active/passive RFID barcode labels with scan-gun or tablet functionality to monitor:</li>
-                    <li>Personnel responsible for checking in/out items</li>
-                    <li>Timestamps of item check-in/out activities</li>
-                    <li>Locations of item transactions</li>
-                    <li>Job associations for utilized items</li>
-                    <li>Duration of item checkouts</li>
-                    <li>Condition and calibration status at check in/out</li>
-                </ul>
-            </li>
-
-    <!-- Spacer -->
-    <div style="height: 25px;"></div>
-
-            <li class="info-item">Efficient Equipment Management:
-            <hr style="border-top: 2px double;">
-
-                <ul>
-                    <li>Record all transactions for streamlined auditing processes.</li>
-                    <li>Document serviceability data for both calibrated and non-calibrated electronic test equipment.</li>
-                    <li>Track purchase and calibration costs for comprehensive financial oversight.</li>
-                    <li>Maintain records of calibration procedures, standards, and certificates used by technicians/vendors to ensure compliance with NIST standards.</li>
-                </ul>
-            </li>
-        
-    <!-- Spacer -->
-    <div style="height: 25px;"></div>
-
-            <li class="info-item">Effortless Inventory Management:
-            <hr style="border-top: 2px double;">
-
-                <ul>
-                    <li>Centralize control of inventory through a single, user-friendly program.</li>
-                    <li>Manage customer and supervisor information seamlessly for enhanced organizational efficiency.</li>
-                </ul>
-            </li>
-
-    <!-- Spacer -->
-    <div style="height: 25px;"></div>
-
-            <li class="info-item">Simplified Reporting:
-            <hr style="border-top: 2px double;">
-
-                <ul>
-                    <li>Easily generate, filter, and sort reports according to specific needs.</li>
-                    <li>Access pre-generated or customize reports for tailored insights.</li>
-                    <li>Export reports to PDF or Excel formats for convenient sharing and archival.</li>
-                    <li>Choose between print or email options for flexible dissemination.</li>
-                </ul>
-            </li>
-        </ul>
+    <div>
+      <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password"
+             class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+             placeholder="Enter password">
     </div>
-    
-    <div> <!-- Added closing div tag -->
-        <img src="{{ url_for('static', filename='images/tool-crib2.jpg') }}" alt="tool-crib2" width="400" height="240" style="padding: 25px; margin: 25px;">
-        <img src="{{ url_for('static', filename='images/Dewalt-Workshop.jpg') }}" alt="Dewalt-Workshop" width="400" height="240" style="padding: 25px; margin: 25px;">
-        <img src="{{ url_for('static', filename='images/tool_crib.jpg') }}" alt="tool_crib" width="400" height="240" style="padding: 25px; margin: 25px;">
-        <img src="{{ url_for('static', filename='images/seabox.jpg') }}" alt="seabox" width="400" height="240" style="padding: 25px; margin: 25px;">
-    </div>
-    
-</div>    
+    <button type="submit" class="btn-atems w-full py-3 px-4 rounded-lg font-semibold text-lg hover:opacity-95 transition-opacity">
+      Sign In
+    </button>
+  </form>
 
-<!-- Spacer -->
-    <div style="height: 50px;"></div>
-
+  <p class="mt-6 text-center text-slate-500 text-sm">
+    Professional inventory control for tool rooms & warehouses
+  </p>
+</div>
 {% endblock %}
-</html>

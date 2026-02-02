@@ -1,0 +1,21 @@
+/* ATEMS - Modern dark theme */
+:root {
+  --atems-bg: #0f172a;
+  --atems-card: #1e293b;
+  --atems-border: #334155;
+  --atems-muted: #94a3b8;
+  --atems-primary: #38bdf8;
+  --atems-success: #34d399;
+  --atems-warning: #fbbf24;
+  --atems-accent: #6366f1;
+}
+
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+.sidebar-link.active { background: rgba(56, 189, 248, 0.15); color: var(--atems-primary); border-left: 3px solid var(--atems-primary); }
+.stat-card { transition: transform 0.15s, box-shadow 0.15s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5); }
+.btn-atems { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; }
+.btn-atems:hover { filter: brightness(1.1); color: white; }
+.input-atems { background: var(--atems-card); border-color: var(--atems-border); color: #f1f5f9; }
+.input-atems:focus { border-color: var(--atems-primary); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }
+.input-atems::placeholder { color: var(--atems-muted); }

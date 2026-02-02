@@ -1,105 +1,283 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<!-- reports.html -->
-
-{% extends "common.html" %}
-
+{% extends "base.html" %}
+{% block title %}Tool Reports{% endblock %}
+{% block page_title %}Tool Reports{% endblock %}
 {% block content %}
+<div class="max-w-7xl mx-auto">
+  <p class="text-slate-400 mb-6">Generate and view tool usage, calibration, and inventory reports. Export to CSV for records.</p>
 
-<form action="{{ url_for('routes.reports') }}" method="POST">
-    {{ form.hidden_tag() }}
-    {{ form.csrf_token }}
-    <!-- rest of your form fields here -->
-    <input type="submit" value="Submit">
-</form>
+  <!-- Report type tabs -->
+  <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-700 pb-4">
+    <button type="button" data-report="usage" class="report-tab px-4 py-2 rounded-lg font-medium transition-colors bg-sky-600 text-white">
+      Tool Usage
+    </button>
+    <button type="button" data-report="calibration" class="report-tab px-4 py-2 rounded-lg font-medium transition-colors bg-slate-700 text-slate-300 hover:bg-slate-600">
+      Calibration
+    </button>
+    <button type="button" data-report="inventory" class="report-tab px-4 py-2 rounded-lg font-medium transition-colors bg-slate-700 text-slate-300 hover:bg-slate-600">
+      Inventory
+    </button>
+  </div>
 
-    <!-- header -->
-    <header>
-    <h3>Reports Interface</h3>
-    </header>
-
-    <!-- form to generate a report -->
-    <form action="{{ url_for('generate_report') }}" method="post">
-        <input type="submit" value="Generate Report">
-    </form>
-
-    <!-- list of available reports -->
-    <ul>
-        {% for report in reports %}
-        <li><a href="{{ url_for('report', report_id=report.id) }}">Report {{ report.id }}</a></li>
-        {% endfor %}
-    </ul>
-
-    <!-- button to generate report -->
-    <button type="button" id="generate_report">Generate Report</button>
-
-    <!-- double line separator -->
-    <hr style="border-top: 2px double #8c8b8b; width: 100%; margin: 10px auto;">
-
-    <!-- live report -->
-    <table id="customer_table">
-        <thead>
-            <tr>
-                <th>customer UserName</th>
-                <th>customer Email</th>
-                <th>customer Badge/ID</th>
-                <th>customer Phone</th>
-                <th>customer Department</th>
-                <th>Supervisor UserName</th>
-                <th>Supervisor Email</th>
-                <th>Manager UserName</th>
-                <th>Manager Email</th>
+  <!-- Tool Usage Report -->
+  <div id="report-usage" class="report-panel">
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-4">
+      <h3 class="text-lg font-semibold text-slate-200 mb-4">Tool Usage Report</h3>
+      <p class="text-slate-400 text-sm mb-4">Check-in/check-out history. Filter by date range, user, or tool.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">From date</label>
+          <input type="date" id="usage-date-from" class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">To date</label>
+          <input type="date" id="usage-date-to" class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Username (optional)</label>
+          <input type="text" id="usage-username" placeholder="Filter by user" class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Tool ID (optional)</label>
+          <input type="text" id="usage-tool-id" placeholder="Filter by tool" class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200">
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" id="btn-load-usage" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium">Load Report</button>
+        <a href="/api/reports/export?type=usage&limit=2000" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium">Export CSV</a>
+      </div>
+    </div>
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+        <span class="text-slate-400" id="usage-count">—</span>
+      </div>
+      <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/50 sticky top-0">
+            <tr class="border-b border-slate-700">
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Time</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Action</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Tool ID</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Tool Name</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">User</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Job</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Condition</th>
             </tr>
-        </thead>
-        <tbody>
-            <!-- The data rows will be added here by the JavaScript code -->
-        </tbody>
-    </table>
+          </thead>
+          <tbody id="usage-tbody">
+            <tr><td colspan="7" class="py-8 text-center text-slate-500">Load report to see data.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-    <!-- JavaScript to handle the report generation -->
-    <script>
-        document.getElementById('generate_report').addEventListener('click', function() {
-            var report_form = document.getElementById('report_form');
-            var data = new FormData(report_form);
-            fetch('{{ url_for('get_customer_data') }}', {
-                method: 'POST',
-                body: data
-            }).then(function(response) {
-                if (response.ok) {
-                    response.json().then(function(data) {
-                        // Clear the table
-                        $('#customer_table').DataTable().clear().destroy();
+  <!-- Calibration Report -->
+  <div id="report-calibration" class="report-panel hidden">
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-4">
+      <h3 class="text-lg font-semibold text-slate-200 mb-4">Calibration Report</h3>
+      <p class="text-slate-400 text-sm mb-4">Tools with calibration due dates: overdue and due soon.</p>
+      <div class="flex gap-3">
+        <button type="button" id="btn-load-calibration" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium">Load Report</button>
+        <a href="/api/reports/export?type=calibration" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium">Export CSV</a>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700 bg-amber-900/20">
+          <h4 class="font-semibold text-amber-400">Overdue (<span id="cal-overdue-count">0</span>)</h4>
+        </div>
+        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-900/50 sticky top-0">
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-2 px-4 text-slate-400 font-medium">Tool ID</th>
+                <th class="text-left py-2 px-4 text-slate-400 font-medium">Due</th>
+                <th class="text-left py-2 px-4 text-slate-400 font-medium">Location</th>
+              </tr>
+            </thead>
+            <tbody id="cal-overdue-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700 bg-sky-900/20">
+          <h4 class="font-semibold text-sky-400">Due Soon (<span id="cal-soon-count">0</span>)</h4>
+        </div>
+        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-900/50 sticky top-0">
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-2 px-4 text-slate-400 font-medium">Tool ID</th>
+                <th class="text-left py-2 px-4 text-slate-400 font-medium">Due</th>
+                <th class="text-left py-2 px-4 text-slate-400 font-medium">Location</th>
+              </tr>
+            </thead>
+            <tbody id="cal-soon-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-                        // Populate the table with the data
-                        var table_body = document.getElementById('customer_table').getElementsByTagName('tbody')[0];
-                        data.forEach(function(item) {
-                            var row = table_body.insertRow();
-                            var cell1 = row.insertCell(0);
-                            var cell2 = row.insertCell(1);
-                            var cell3 = row.insertCell(2);
-                            var cell4 = row.insertCell(3);
-                            var cell5 = row.insertCell(4);
-                            var cell6 = row.insertCell(5);
-                            cell1.innerHTML = item.customer_username;
-                            cell2.innerHTML = item.customer_email;
-                            cell3.innerHTML = item.customer_badge_id;
-                            cell4.innerHTML = item.customer_phone;
-                            cell5.innerHTML = item.dept;
-                            cell6.innerHTML = item.supervisor_username;
-                        });
+  <!-- Inventory Report -->
+  <div id="report-inventory" class="report-panel hidden">
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-4">
+      <h3 class="text-lg font-semibold text-slate-200 mb-4">Inventory Report</h3>
+      <p class="text-slate-400 text-sm mb-4">Tools by category and status: in stock vs checked out.</p>
+      <div class="flex gap-3">
+        <button type="button" id="btn-load-inventory" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium">Load Report</button>
+        <a href="/api/reports/export?type=inventory" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium">Export CSV</a>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-center">
+        <p class="text-slate-400 text-sm">Total Tools</p>
+        <p class="text-2xl font-bold text-slate-100" id="inv-total">—</p>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-center">
+        <p class="text-slate-400 text-sm">In Stock</p>
+        <p class="text-2xl font-bold text-emerald-400" id="inv-in-stock">—</p>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-4 text-center">
+        <p class="text-slate-400 text-sm">Checked Out</p>
+        <p class="text-2xl font-bold text-sky-400" id="inv-checked-out">—</p>
+      </div>
+    </div>
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-700">
+        <h4 class="font-semibold text-slate-200">By Category</h4>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/50">
+            <tr class="border-b border-slate-700">
+              <th class="text-left py-3 px-4 text-slate-400 font-medium">Category</th>
+              <th class="text-right py-3 px-4 text-slate-400 font-medium">Total</th>
+              <th class="text-right py-3 px-4 text-slate-400 font-medium">In Stock</th>
+              <th class="text-right py-3 px-4 text-slate-400 font-medium">Checked Out</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-tbody">
+            <tr><td colspan="4" class="py-8 text-center text-slate-500">Load report to see data.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
-                        // Initialize the DataTable
-                        $('#customer_table').DataTable();
-                    });
-                } else {
-                    console.error('Failed to generate report');
-                }
-            });
-        });
-    </script>
+<script>
+(function() {
+  const reportPanels = document.querySelectorAll('.report-panel');
+  const reportTabs = document.querySelectorAll('.report-tab');
 
+  function switchReport(name) {
+    reportPanels.forEach(p => {
+      p.classList.toggle('hidden', p.id !== 'report-' + name);
+    });
+    reportTabs.forEach(t => {
+      const isActive = t.getAttribute('data-report') === name;
+      t.classList.toggle('bg-sky-600', isActive);
+      t.classList.toggle('text-white', isActive);
+      t.classList.toggle('bg-slate-700', !isActive);
+      t.classList.toggle('text-slate-300', !isActive);
+    });
+    if (name === 'usage') loadUsage();
+    if (name === 'calibration') loadCalibration();
+    if (name === 'inventory') loadInventory();
+  }
 
+  function loadUsage() {
+    const from = document.getElementById('usage-date-from').value;
+    const to = document.getElementById('usage-date-to').value;
+    const username = document.getElementById('usage-username').value;
+    const toolId = document.getElementById('usage-tool-id').value;
+    let url = '/api/reports/usage?limit=500';
+    if (from) url += '&date_from=' + encodeURIComponent(from);
+    if (to) url += '&date_to=' + encodeURIComponent(to);
+    if (username) url += '&username=' + encodeURIComponent(username);
+    if (toolId) url += '&tool_id=' + encodeURIComponent(toolId);
+    fetch(url).then(r => r.json()).then(data => {
+      document.getElementById('usage-count').textContent = data.count + ' events';
+      const tbody = document.getElementById('usage-tbody');
+      tbody.innerHTML = '';
+      if (!data.events || data.events.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No events found.</td></tr>';
+        return;
+      }
+      data.events.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-700/50 hover:bg-slate-700/30';
+        const time = e.event_time ? new Date(e.event_time).toLocaleString() : '—';
+        tr.innerHTML = '<td class="py-3 px-4 text-slate-300">' + time + '</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded text-xs ' + (e.action === 'checkin' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-sky-500/20 text-sky-400') + '">' + (e.action || '') + '</span></td><td class="py-3 px-4 text-slate-200">' + (e.tool_id_number || '') + '</td><td class="py-3 px-4 text-slate-300">' + (e.tool_name || '') + '</td><td class="py-3 px-4 text-slate-300">' + (e.username || '') + '</td><td class="py-3 px-4 text-slate-400">' + (e.job_id || '—') + '</td><td class="py-3 px-4 text-slate-400">' + (e.condition || '—') + '</td>';
+        tbody.appendChild(tr);
+      });
+    }).catch(() => {
+      document.getElementById('usage-count').textContent = 'Error loading';
+      document.getElementById('usage-tbody').innerHTML = '<tr><td colspan="7" class="py-6 text-center text-red-400">Failed to load report.</td></tr>';
+    });
+  }
 
+  function loadCalibration() {
+    fetch('/api/reports/calibration').then(r => r.json()).then(data => {
+      document.getElementById('cal-overdue-count').textContent = data.overdue_count || 0;
+      document.getElementById('cal-soon-count').textContent = data.due_soon_count || 0;
+      const overdueTbody = document.getElementById('cal-overdue-tbody');
+      const soonTbody = document.getElementById('cal-soon-tbody');
+      overdueTbody.innerHTML = '';
+      soonTbody.innerHTML = '';
+      (data.overdue || []).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-700/50';
+        tr.innerHTML = '<td class="py-2 px-4 text-slate-200">' + (r.tool_id_number || '') + '</td><td class="py-2 px-4 text-amber-400">' + (r.tool_calibration_due || '') + '</td><td class="py-2 px-4 text-slate-400">' + (r.tool_location || '') + '</td>';
+        overdueTbody.appendChild(tr);
+      });
+      (data.due_soon || []).slice(0, 100).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-700/50';
+        tr.innerHTML = '<td class="py-2 px-4 text-slate-200">' + (r.tool_id_number || '') + '</td><td class="py-2 px-4 text-sky-400">' + (r.tool_calibration_due || '') + '</td><td class="py-2 px-4 text-slate-400">' + (r.tool_location || '') + '</td>';
+        soonTbody.appendChild(tr);
+      });
+      if ((data.overdue || []).length === 0) overdueTbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500">No overdue tools.</td></tr>';
+      if ((data.due_soon || []).length === 0) soonTbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500">No tools due soon.</td></tr>';
+    }).catch(() => {
+      document.getElementById('cal-overdue-count').textContent = '—';
+      document.getElementById('cal-soon-count').textContent = '—';
+    });
+  }
+
+  function loadInventory() {
+    fetch('/api/reports/inventory').then(r => r.json()).then(data => {
+      document.getElementById('inv-total').textContent = data.total ?? '—';
+      document.getElementById('inv-in-stock').textContent = data.in_stock ?? '—';
+      document.getElementById('inv-checked-out').textContent = data.checked_out ?? '—';
+      const tbody = document.getElementById('inventory-tbody');
+      tbody.innerHTML = '';
+      if (!data.by_category || data.by_category.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-slate-500">No categories.</td></tr>';
+        return;
+      }
+      data.by_category.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-700/50 hover:bg-slate-700/30';
+        tr.innerHTML = '<td class="py-3 px-4 text-slate-200">' + (c.category || '') + '</td><td class="py-3 px-4 text-right text-slate-300">' + (c.total || 0) + '</td><td class="py-3 px-4 text-right text-emerald-400">' + (c.in_stock || 0) + '</td><td class="py-3 px-4 text-right text-sky-400">' + (c.checked_out || 0) + '</td>';
+        tbody.appendChild(tr);
+      });
+    }).catch(() => {
+      document.getElementById('inv-total').textContent = '—';
+      document.getElementById('inv-in-stock').textContent = '—';
+      document.getElementById('inv-checked-out').textContent = '—';
+    });
+  }
+
+  reportTabs.forEach(t => {
+    t.addEventListener('click', () => switchReport(t.getAttribute('data-report')));
+  });
+  document.getElementById('btn-load-usage').addEventListener('click', loadUsage);
+  document.getElementById('btn-load-calibration').addEventListener('click', loadCalibration);
+  document.getElementById('btn-load-inventory').addEventListener('click', loadInventory);
+
+  switchReport('usage');
+})();
+</script>
 {% endblock %}
-</html>

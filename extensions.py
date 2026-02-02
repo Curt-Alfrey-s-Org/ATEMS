@@ -36,7 +36,7 @@ def init_app(app):
         login_manager.anonymous_user = Anonymous
         
         # Configure LoginManager
-        login_manager.login_view = 'auth.login'
+        login_manager.login_view = "main.login"
         login_manager.login_message = 'Please log in to access this page.'
         login_manager.login_message_category = 'info'
         
@@ -44,9 +44,7 @@ def init_app(app):
         admin.name = 'ATEMS Admin'
         admin.template_mode = 'bootstrap4'
         
-        # Example: Register a model with Flask-Admin
-        from models.user import User  # Import your models
-        admin.add_view(ModelView(User, db.session))
+        # Model views are registered in models/*.py
     except Exception as e:
         print(f"Error initializing extensions: {e}")
         raise

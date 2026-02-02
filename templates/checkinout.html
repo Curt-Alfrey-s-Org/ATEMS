@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Check In/Out{% endblock %}
+{% block page_title %}Check In / Check Out{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <p class="text-slate-400 mb-6">Scan or enter badge + tool. Same form for both — system toggles based on current state.</p>
+
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 lg:p-8">
+    <form id="myForm" method="POST" action="{{ url_for('main.checkinout') }}" class="space-y-5">
+      {{ form.hidden_tag() }}
+      <div>
+        <label for="username" class="block text-sm font-medium text-slate-300 mb-2" data-tooltip="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="username"
+               class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+               placeholder="Enter or scan username">
+      </div>
+      <div>
+        <label for="badge_id" class="block text-sm font-medium text-slate-300 mb-2" data-tooltip="badge-id">Badge ID</label>
+        <input type="text" id="badge_id" name="badge_id" required
+               class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+               placeholder="Scan or enter badge">
+      </div>
+      <div>
+        <label for="tool_id_number" class="block text-sm font-medium text-slate-300 mb-2" data-tooltip="tool-id">Tool ID</label>
+        <input type="text" id="tool_id_number" name="tool_id_number" required
+               class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+               placeholder="Scan or enter tool ID">
+      </div>
+      <div>
+        <label for="job_id" class="block text-sm font-medium text-slate-300 mb-2" data-tooltip="job-id">Job/Project ID <span class="text-slate-500">(optional)</span></label>
+        <input type="text" id="job_id" name="job_id"
+               class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+               placeholder="e.g. JOB-2024-001">
+      </div>
+      <div>
+        <label for="condition" class="block text-sm font-medium text-slate-300 mb-2" data-tooltip="condition">Condition <span class="text-slate-500">(optional)</span></label>
+        <select id="condition" name="condition" class="input-atems w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2">
+          <option value="">— Select (optional) —</option>
+          <option value="Good">Good</option>
+          <option value="Fair">Fair</option>
+          <option value="Damaged">Damaged</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-atems w-full py-3 px-4 rounded-lg font-semibold text-lg">
+        Submit
+      </button>
+    </form>
+    <div id="js-messages" class="mt-4"></div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='styles/js/checkinout.js') }}"></script>
+{% endblock %}

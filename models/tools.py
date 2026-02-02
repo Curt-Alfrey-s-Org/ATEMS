@@ -21,6 +21,8 @@ class Tools(db.Model):
     tool_calibration_date = db.Column(db.String(64), nullable=False)
     tool_calibration_cert = db.Column(db.String(64), nullable=False)
     tool_calibration_schedule = db.Column(db.String(64), nullable=False)
+    checked_out_by = db.Column(db.String(128), nullable=True)  # username when checked out
+    category = db.Column(db.String(64), nullable=True)  # industry/category: Construction, Manufacturing, etc.
     checkout_time = db.Column(db.DateTime, default=datetime.now)
     checkin_time = db.Column(db.DateTime, default=datetime.now)
     
@@ -30,9 +32,9 @@ class Tools(db.Model):
     
 class ToolsView(ModelView):
     """View for tools"""
-    column_searchable_list = ['tool_name', 'tool_id_number', 'tool_location','tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
-    column_filters = ['tool_name', 'tool_id_number', 'tool_location','tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
-    column_editable_list = ['tool_name', 'tool_id_number', 'tool_location','tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
+    column_searchable_list = ['tool_name', 'tool_id_number', 'tool_location', 'category', 'tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
+    column_filters = ['tool_name', 'tool_id_number', 'tool_location', 'category', 'tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
+    column_editable_list = ['tool_name', 'tool_id_number', 'tool_location', 'category', 'tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
     column_default_sort = ('tool_name', 'tool_id_number', 'tool_location', 'tool_status', True)
     column_sortable_list = ['tool_name', 'tool_id_number', 'tool_location','tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
     column_labels = dict(tool_name='Tool Name', tool_id_number='tool_id_number', tool_location='Tool Location', tool_status='Tool Status', tool_calibration_due='Calibration Due', tool_calibration_date='Calibration Date', tool_calibration_cert='Calibration Cert', tool_calibration_schedule='Calibration Schedule', checkout_time='Checkout Time', checkin_time='Checkin Time')

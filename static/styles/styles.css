@@ -1,19 +1,38 @@
 /* styles.css */
 
+/* Admin: top corner images - resized and contained */
 #top-left {
-    position: absolute; /*makes navbar items horizontal*/
-    top: 5px; /*distance from top of screen*/
-    left: 2px; /*distance from left side of screen*/
-    width: 150px; /*width of navbar items*/
-    height: 75px; /*height of navbar items*/
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 100px;
+    height: 52px;
+    overflow: hidden;
+    z-index: 10;
+}
+#top-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left top;
+    display: block;
 }
 
 #top-right {
-    position: absolute; /*makes navbar items horizontal*/
-    top: 5px; /*distance from top of screen*/
-    right: 2px; /*distance from right side of screen*/
-    width: 150px; /*width of navbar items*/
-    height: 75px; /*height of navbar items*/
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 100px;
+    height: 52px;
+    overflow: hidden;
+    z-index: 10;
+}
+#top-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: right top;
+    display: block;
 }
 
 
@@ -126,39 +145,61 @@ body {
     align-items: center; /*centers items vertically in the container*/
 }
 footer {
-    display: flex; /*makes navbar items horizontal*/
-    justify-content: space-between; /*distributes items evenly in the container*/
-    align-items: center; /*centers items vertically in the container*/
-    background-color: #003268; /*background color of navbar*/
-    color: #ffffff; /*color of text in navbar items*/
-    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #003268;
+    color: #ffffff;
+    padding: 12px 16px;
+    gap: 16px;
+    min-height: 72px;
 }
 
 
 
 #footer-center {
-    display: flex; /*makes text items vertical*/
-    flex-direction: column; /*stacks text items vertically*/
-    align-items: center; /*centers text items horizontally*/
-    font-size: 18px; /*size of text in navbar items*/
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex: 1;
+    padding: 0 1rem;
 }
 
-
+/* Admin: footer images - resized and contained */
 #footer-left {
-    display: inline; /*makes text items vertical*/
-    flex-direction: column; /*stacks text items vertically*/
-    align-items: left; /*centers text items horizontally*/
-    width: 150px; /*width of navbar items*/
-    height: 75px; /*height of navbar items*/
+    flex-shrink: 0;
+    width: 80px;
+    height: 48px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
 }
-
+#footer-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+    display: block;
+}
 
 #footer-right {
-    display: inline; /*makes text items vertical*/
-    flex-direction: column; /*stacks text items vertically*/
-    align-items: right; /*centers text items horizontally*/
-    width: 150px; /*width of navbar items*/
-    height: 75px; /*height of navbar items*/
+    flex-shrink: 0;
+    width: 80px;
+    height: 48px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+#footer-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: right center;
+    display: block;
 }
 
 table {
@@ -177,5 +218,21 @@ table {
 }
 
 
+
+/* Stat cards (dashboard) */
+.stat-card {
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+    border-color: rgba(var(--bs-primary-rgb), 0.5);
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.3);
+}
+
+/* Mobile-friendly check-in form */
+@media (max-width: 576px) {
+    .checkin-form .form-control { font-size: 1.1rem; padding: 0.75rem; }
+    .checkin-form .btn { padding: 0.75rem 1.5rem; font-size: 1.1rem; }
+}
 
 /* End of styles.css */
