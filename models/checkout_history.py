@@ -17,13 +17,14 @@ class CheckoutHistory(db.Model):
     event_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
     job_id = db.Column(db.String(64), nullable=True)
     condition = db.Column(db.String(32), nullable=True)  # Good, Fair, Damaged at check-in/out
+    return_by = db.Column(db.DateTime, nullable=True)  # Expected return date (checkout only)
 
     def __repr__(self):
         return f"<CheckoutHistory {self.action} {self.tool_id_number} by {self.username} at {self.event_time}>"
 
 
 class CheckoutHistoryView(ModelView):
-    column_list = ("event_time", "action", "tool_id_number", "tool_name", "username", "job_id", "condition")
+    column_list = ("event_time", "action", "tool_id_number", "tool_name", "username", "job_id", "condition", "return_by")
     column_sortable_list = ("event_time", "action", "tool_id_number", "username", "job_id")
     column_default_sort = ("event_time", True)
     column_filters = ("action", "username", "tool_id_number", "condition")

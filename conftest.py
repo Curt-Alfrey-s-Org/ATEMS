@@ -37,6 +37,7 @@ def app_context(app):
 @pytest.fixture
 def db_session(app, app_context):
     """Create tables and yield session; tear down after test."""
+    db.drop_all()
     db.create_all()
     yield db
     db.drop_all()

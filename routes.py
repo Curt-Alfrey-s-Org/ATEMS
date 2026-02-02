@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from forms import CheckInOutForm
 from models import User, Tools, CheckoutHistory
 from extensions import db
-from datetime import datetime
+from datetime import datetime, time
 from sqlalchemy.exc import SQLAlchemyError
 from utils.calibration import is_calibration_overdue
 import logging
@@ -83,6 +83,25 @@ def dashboard():
         {'label': 'Due in 90+ days', 'count': cal_due_90, 'color': 'emerald'},
     ]
 
+    # Overdue returns: tools still checked out with return_by < now
+    tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
+    overdue_returns = []
+    for t in tools_out:
+        last_checkout = (
+            CheckoutHistory.query.filter_by(
+                tool_id_number=t.tool_id_number, action="checkout"
+            )
+            .order_by(CheckoutHistory.event_time.desc())
+            .first()
+        )
+        if last_checkout and last_checkout.return_by and last_checkout.return_by < _now:
+            overdue_returns.append({
+                "tool_id_number": t.tool_id_number,
+                "tool_name": t.tool_name or "",
+                "username": t.checked_out_by,
+                "return_by": last_checkout.return_by,
+            })
+
     # Categories list for filter
     categories = [c['name'] for c in category_breakdown]
     max_usage = max((u['count'] for u in usage_trend), default=1)
@@ -99,6 +118,8 @@ def dashboard():
         calibration_summary=calibration_summary,
         categories=categories,
         max_usage=max_usage,
+        overdue_returns=overdue_returns,
+        overdue_returns_count=len(overdue_returns),
     )
 
 
@@ -168,6 +189,11 @@ def _checkinout_logic(form, json_response=True):
             extra["calibration_warning"] = "This tool is overdue for calibration."
         tool.checked_out_by = user.username
         tool.checkout_time = now
+        return_by_dt = None
+        if getattr(form, 'return_by', None) and form.return_by.data:
+            d = form.return_by.data
+            if hasattr(d, 'year'):
+                return_by_dt = datetime.combine(d, time(23, 59, 59))
         hist = CheckoutHistory(
             tool_id_number=tool.tool_id_number,
             tool_name=tool.tool_name,
@@ -176,6 +202,7 @@ def _checkinout_logic(form, json_response=True):
             event_time=now,
             job_id=job_id,
             condition=condition_val,
+            return_by=return_by_dt,
         )
         db.session.add(hist)
         db.session.commit()
@@ -263,6 +290,92 @@ def reports_page():
     return render_template('reports.html')
 
 
+@bp.route('/import')
+@login_required
+def import_page():
+    """Import tools (and optionally users) from CSV or Excel."""
+    return render_template('import.html')
+
+
+@bp.route('/api/import/preview', methods=['POST'])
+@login_required
+def api_import_preview():
+    """Parse uploaded file and return validated rows + errors (no DB write)."""
+    from utils.import_tools import parse_and_validate_tools
+    if 'file' not in request.files:
+        return jsonify(valid=[], errors=[{"row": 0, "message": "No file uploaded."}]), 200
+    f = request.files['file']
+    if not f.filename:
+        return jsonify(valid=[], errors=[{"row": 0, "message": "No file selected."}]), 200
+    try:
+        content = f.read()
+        valid, errors = parse_and_validate_tools(content, f.filename)
+        return jsonify(valid=valid[:100], errors=errors, total_valid=len(valid), total_errors=len(errors))
+    except Exception as e:
+        return jsonify(valid=[], errors=[{"row": 0, "message": str(e)}]), 200
+
+
+@bp.route('/api/import/tools', methods=['POST'])
+@login_required
+def api_import_tools():
+    """Import tools from uploaded CSV or Excel. Returns created, updated, errors."""
+    from utils.import_tools import parse_and_validate_tools, import_tools_rows
+    if 'file' not in request.files:
+        return jsonify(created=0, updated=0, errors=[{"row": 0, "message": "No file uploaded."}]), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify(created=0, updated=0, errors=[{"row": 0, "message": "No file selected."}]), 400
+    try:
+        content = f.read()
+        valid, parse_errors = parse_and_validate_tools(content, f.filename)
+        if parse_errors and not valid:
+            return jsonify(created=0, updated=0, errors=parse_errors), 400
+        created, updated, import_errors = import_tools_rows(valid)
+        all_errors = parse_errors + import_errors
+        return jsonify(created=created, updated=updated, errors=all_errors, total=len(valid))
+    except Exception as e:
+        logger.exception("Import tools failed")
+        return jsonify(created=0, updated=0, errors=[{"row": 0, "message": str(e)}]), 400  # noqa: B950
+
+
+@bp.route('/api/calibration-reminders/status')
+@login_required
+def api_calibration_reminders_status():
+    """Whether email is configured and current counts (overdue, due soon)."""
+    from utils.calibration_reminders import (
+        is_mail_configured,
+        get_reminder_days,
+        get_remind_overdue,
+        get_due_and_overdue_tools,
+    )
+    from models.tools import Tools
+    tools = Tools.query.filter(
+        Tools.tool_calibration_due.isnot(None),
+        Tools.tool_calibration_due != "",
+        Tools.tool_calibration_due != "N/A",
+    ).all()
+    overdue, due_soon = get_due_and_overdue_tools(tools)
+    return jsonify(
+        mail_configured=is_mail_configured(),
+        reminder_days=get_reminder_days(),
+        remind_overdue=get_remind_overdue(),
+        overdue_count=len(overdue),
+        due_soon_count=len(due_soon),
+        total=len(overdue) + len(due_soon),
+    )
+
+
+@bp.route('/api/calibration-reminders/send', methods=['POST'])
+@login_required
+def api_calibration_reminders_send():
+    """Send calibration reminder email (due/overdue tools). Uses env CALIBRATION_REMIND_* and MAIL_*."""
+    from flask import current_app
+    from utils.calibration_reminders import send_calibration_reminders
+    result = send_calibration_reminders(app=current_app._get_current_object())
+    status = 200 if result.get("sent") or result.get("total", 0) == 0 else 400
+    return jsonify(result), status
+
+
 @bp.route('/api/reports/usage')
 @login_required
 def api_reports_usage():
@@ -304,6 +417,7 @@ def api_reports_usage():
             'username': e.username,
             'job_id': e.job_id or '',
             'condition': e.condition or '',
+            'return_by': e.return_by.isoformat() if getattr(e, 'return_by', None) and e.return_by else None,
         }
         for e in events
     ], count=len(events))
@@ -334,6 +448,32 @@ def api_reports_calibration():
         else:
             due_soon.append(row)
     return jsonify(overdue=overdue, due_soon=due_soon, overdue_count=len(overdue), due_soon_count=len(due_soon))
+
+
+@bp.route('/api/reports/overdue-returns')
+@login_required
+def api_reports_overdue_returns():
+    """Overdue returns: tools currently checked out past their return-by date."""
+    from datetime import timezone
+    _now = datetime.now(timezone.utc).replace(tzinfo=None)
+    tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
+    overdue = []
+    for t in tools_out:
+        last_checkout = (
+            CheckoutHistory.query.filter_by(
+                tool_id_number=t.tool_id_number, action="checkout"
+            )
+            .order_by(CheckoutHistory.event_time.desc())
+            .first()
+        )
+        if last_checkout and last_checkout.return_by and last_checkout.return_by < _now:
+            overdue.append({
+                "tool_id_number": t.tool_id_number,
+                "tool_name": t.tool_name or "",
+                "username": t.checked_out_by,
+                "return_by": last_checkout.return_by.isoformat() if last_checkout.return_by else None,
+            })
+    return jsonify(overdue=overdue, count=len(overdue))
 
 
 @bp.route('/api/reports/inventory')
@@ -367,19 +507,22 @@ def api_reports_inventory():
 @bp.route('/api/reports/export')
 @login_required
 def api_reports_export():
-    """Export report as CSV."""
+    """Export report as CSV, PDF, or Excel (format=csv|pdf|xlsx)."""
+    from flask import Response
+    import csv
+    import io
+
     report_type = request.args.get('type', 'usage')
+    fmt = request.args.get('format', 'csv').lower()
+    if fmt not in ('csv', 'pdf', 'xlsx'):
+        fmt = 'csv'
+
     if report_type == 'usage':
         limit = min(int(request.args.get('limit', 2000)), 5000)
         events = CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(limit).all()
-        from flask import Response
-        import csv
-        import io
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(['Event Time', 'Action', 'Tool ID', 'Tool Name', 'User', 'Job ID', 'Condition'])
-        for e in events:
-            w.writerow([
+        headers = ['Event Time', 'Action', 'Tool ID', 'Tool Name', 'User', 'Job ID', 'Condition', 'Return By']
+        rows = [
+            [
                 e.event_time.strftime('%Y-%m-%d %H:%M') if e.event_time else '',
                 e.action,
                 e.tool_id_number or '',
@@ -387,22 +530,68 @@ def api_reports_export():
                 e.username or '',
                 e.job_id or '',
                 e.condition or '',
-            ])
+                e.return_by.strftime('%Y-%m-%d') if getattr(e, 'return_by', None) and e.return_by else '',
+            ]
+            for e in events
+        ]
+        if fmt == 'pdf':
+            from utils.report_export import pdf_table
+            data = pdf_table(headers, rows, title="ATEMS Tool Usage Report")
+            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.pdf'})
+        if fmt == 'xlsx':
+            from utils.report_export import xlsx_table
+            data = xlsx_table(headers, rows, sheet_name="Usage")
+            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.xlsx'})
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(headers)
+        for r in rows:
+            w.writerow(r)
         return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.csv'})
+    elif report_type == 'overdue-returns':
+        from datetime import timezone
+        _now = datetime.now(timezone.utc).replace(tzinfo=None)
+        tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
+        headers = ['Tool ID', 'Tool Name', 'Checked out by', 'Return by']
+        rows = []
+        for t in tools_out:
+            last_checkout = (
+                CheckoutHistory.query.filter_by(
+                    tool_id_number=t.tool_id_number, action="checkout"
+                )
+                .order_by(CheckoutHistory.event_time.desc())
+                .first()
+            )
+            if last_checkout and last_checkout.return_by and last_checkout.return_by < _now:
+                rows.append([
+                    t.tool_id_number or '',
+                    t.tool_name or '',
+                    t.checked_out_by or '',
+                    last_checkout.return_by.strftime('%Y-%m-%d') if last_checkout.return_by else '',
+                ])
+        if fmt == 'pdf':
+            from utils.report_export import pdf_table
+            data = pdf_table(headers, rows, title="ATEMS Overdue Returns")
+            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.pdf'})
+        if fmt == 'xlsx':
+            from utils.report_export import xlsx_table
+            data = xlsx_table(headers, rows, sheet_name="Overdue Returns")
+            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.xlsx'})
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(headers)
+        for r in rows:
+            w.writerow(r)
+        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.csv'})
     elif report_type == 'calibration':
         from utils.calibration import is_calibration_overdue
-        from flask import Response
-        import csv
-        import io
         cal_tools = Tools.query.filter(
             Tools.tool_calibration_due != 'N/A',
             Tools.tool_calibration_due.isnot(None),
         ).order_by(Tools.tool_calibration_due).all()
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(['Tool ID', 'Tool Name', 'Location', 'Category', 'Calibration Due', 'Status', 'Overdue'])
-        for t in cal_tools:
-            w.writerow([
+        headers = ['Tool ID', 'Tool Name', 'Location', 'Category', 'Calibration Due', 'Status', 'Overdue']
+        rows = [
+            [
                 t.tool_id_number,
                 t.tool_name or '',
                 t.tool_location or '',
@@ -410,18 +599,28 @@ def api_reports_export():
                 t.tool_calibration_due or '',
                 t.tool_status or '',
                 'Yes' if is_calibration_overdue(t.tool_calibration_due) else 'No',
-            ])
-        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.csv'})
-    elif report_type == 'inventory':
-        from flask import Response
-        import csv
-        import io
-        tools = Tools.query.order_by(Tools.category, Tools.tool_id_number).all()
+            ]
+            for t in cal_tools
+        ]
+        if fmt == 'pdf':
+            from utils.report_export import pdf_table
+            data = pdf_table(headers, rows, title="ATEMS Calibration Report")
+            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.pdf'})
+        if fmt == 'xlsx':
+            from utils.report_export import xlsx_table
+            data = xlsx_table(headers, rows, sheet_name="Calibration")
+            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.xlsx'})
         buf = io.StringIO()
         w = csv.writer(buf)
-        w.writerow(['Tool ID', 'Tool Name', 'Location', 'Category', 'Status', 'Checked Out By', 'Calibration Due'])
-        for t in tools:
-            w.writerow([
+        w.writerow(headers)
+        for r in rows:
+            w.writerow(r)
+        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.csv'})
+    elif report_type == 'inventory':
+        tools = Tools.query.order_by(Tools.category, Tools.tool_id_number).all()
+        headers = ['Tool ID', 'Tool Name', 'Location', 'Category', 'Status', 'Checked Out By', 'Calibration Due']
+        rows = [
+            [
                 t.tool_id_number,
                 t.tool_name or '',
                 t.tool_location or '',
@@ -429,7 +628,22 @@ def api_reports_export():
                 t.tool_status or '',
                 t.checked_out_by or '',
                 t.tool_calibration_due or '',
-            ])
+            ]
+            for t in tools
+        ]
+        if fmt == 'pdf':
+            from utils.report_export import pdf_table
+            data = pdf_table(headers, rows, title="ATEMS Inventory Report")
+            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.pdf'})
+        if fmt == 'xlsx':
+            from utils.report_export import xlsx_table
+            data = xlsx_table(headers, rows, sheet_name="Inventory")
+            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.xlsx'})
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(headers)
+        for r in rows:
+            w.writerow(r)
         return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.csv'})
     return jsonify(error='Invalid report type'), 400
 
@@ -571,6 +785,18 @@ def api_tools():
     ])
 
 
+@bp.route('/api/user-by-badge')
+def api_user_by_badge():
+    """Look up username by badge_id (for scan flow: fill username when badge is scanned)."""
+    badge_id = (request.args.get("badge_id") or "").strip()
+    if not badge_id:
+        return jsonify(username=None), 200
+    user = User.query.filter_by(badge_id=badge_id).first()
+    if not user:
+        return jsonify(username=None), 200
+    return jsonify(username=user.username)
+
+
 @bp.route('/api/checkinout', methods=['POST'])
 def api_checkinout():
     """JSON API for check-in/check-out (scan-gun, mobile)."""
@@ -580,15 +806,17 @@ def api_checkinout():
     tool_id_number = data.get("tool_id_number") or request.form.get("tool_id_number")
     job_id = data.get("job_id") or request.form.get("job_id")
     condition = data.get("condition") or request.form.get("condition")
-    form = CheckInOutForm(
-        data={
-            "username": username,
-            "badge_id": badge_id,
-            "tool_id_number": tool_id_number,
-            "job_id": job_id or "",
-            "condition": condition or "",
-        }
-    )
+    return_by = data.get("return_by") or request.form.get("return_by")
+    form_data = {
+        "username": username,
+        "badge_id": badge_id,
+        "tool_id_number": tool_id_number,
+        "job_id": job_id or "",
+        "condition": condition or "",
+    }
+    if return_by:
+        form_data["return_by"] = return_by
+    form = CheckInOutForm(data=form_data)
     if not form.validate():
         first = next((v[0] for v in form.errors.values() if v), "Validation failed")
         return jsonify(status="error", message=first, errors=form.errors), 400

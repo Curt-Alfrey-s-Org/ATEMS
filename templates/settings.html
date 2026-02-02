@@ -65,6 +65,16 @@
         </label>
         <p class="text-slate-500 text-xs mt-1 ml-6">When enabled, calibration widget shows overdue count only.</p>
       </div>
+      <div class="pt-4 border-t border-slate-600">
+        <h3 class="text-sm font-semibold text-slate-300 mb-2">Email reminders</h3>
+        <p class="text-slate-500 text-xs mb-2">Send a summary of tools due or overdue for calibration to configured recipients. Set MAIL_* and CALIBRATION_REMIND_TO in .env to enable.</p>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button type="button" id="sendCalRemindersBtn" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium transition-colors">
+            Send calibration reminders now
+          </button>
+          <span id="calRemindersStatus" class="text-sm text-slate-400">—</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -204,9 +214,37 @@
     alert('Settings reset to defaults.');
   }
 
+  function sendCalReminders() {
+    const btn = document.getElementById('sendCalRemindersBtn');
+    const statusEl = document.getElementById('calRemindersStatus');
+    if (!btn || !statusEl) return;
+    btn.disabled = true;
+    statusEl.textContent = 'Sending…';
+    fetch('/api/calibration-reminders/send', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sent) {
+          statusEl.textContent = data.message || 'Sent.';
+          statusEl.className = 'text-sm text-emerald-400';
+        } else {
+          statusEl.textContent = (data.message || 'Error') + (data.error ? ': ' + data.error : '');
+          statusEl.className = 'text-sm text-amber-400';
+        }
+      })
+      .catch(() => {
+        statusEl.textContent = 'Request failed.';
+        statusEl.className = 'text-sm text-red-400';
+      })
+      .finally(() => { btn.disabled = false; });
+  }
+
   load();
+  loadCalRemindersStatus();
   document.getElementById('saveBtn').addEventListener('click', save);
   document.getElementById('resetBtn').addEventListener('click', reset);
+  if (document.getElementById('sendCalRemindersBtn')) {
+    document.getElementById('sendCalRemindersBtn').addEventListener('click', sendCalReminders);
+  }
   document.querySelectorAll('[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => applyPreset(btn.getAttribute('data-preset')));
   });

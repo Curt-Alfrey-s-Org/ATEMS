@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Import Tools{% endblock %}
+{% block page_title %}Import Tools{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <p class="text-slate-400 mb-6">Upload a CSV or Excel file to bulk import or update tools. Required columns: <strong>tool_id_number</strong> (or Tool ID), <strong>tool_name</strong> (or Name). Optional: tool_location, tool_status, tool_calibration_due, category.</p>
+
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-6">
+    <h3 class="text-lg font-semibold text-slate-200 mb-4">Import tools</h3>
+    <form id="importForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">File (CSV or .xlsx)</label>
+        <input type="file" id="importFile" name="file" accept=".csv,.xlsx,.xls" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600">
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" id="btnPreview" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium">Preview</button>
+        <button type="button" id="btnImport" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium">Import</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="previewResult" class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden mb-6 hidden">
+    <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+      <h3 class="font-semibold text-slate-200">Preview</h3>
+      <span id="previewSummary" class="text-slate-400 text-sm">—</span>
+    </div>
+    <div class="overflow-x-auto max-h-64 overflow-y-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-900/50 sticky top-0">
+          <tr class="border-b border-slate-700">
+            <th class="text-left py-2 px-4 text-slate-400 font-medium">tool_id_number</th>
+            <th class="text-left py-2 px-4 text-slate-400 font-medium">tool_name</th>
+            <th class="text-left py-2 px-4 text-slate-400 font-medium">tool_location</th>
+            <th class="text-left py-2 px-4 text-slate-400 font-medium">tool_status</th>
+          </tr>
+        </thead>
+        <tbody id="previewTbody"></tbody>
+      </table>
+    </div>
+    <div id="previewErrors" class="px-6 py-4 border-t border-slate-700 text-amber-400 text-sm hidden"></div>
+  </div>
+
+  <div id="importResult" class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 hidden">
+    <h3 class="font-semibold text-slate-200 mb-2">Import result</h3>
+    <p id="importSummary" class="text-slate-300"></p>
+    <div id="importErrors" class="mt-2 text-amber-400 text-sm hidden"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var fileInput = document.getElementById("importFile");
+  var btnPreview = document.getElementById("btnPreview");
+  var btnImport = document.getElementById("btnImport");
+  var previewResult = document.getElementById("previewResult");
+  var previewSummary = document.getElementById("previewSummary");
+  var previewTbody = document.getElementById("previewTbody");
+  var previewErrors = document.getElementById("previewErrors");
+  var importResult = document.getElementById("importResult");
+  var importSummary = document.getElementById("importSummary");
+  var importErrors = document.getElementById("importErrors");
+
+  function getFile() {
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+    return fileInput.files[0];
+  }
+
+  function showPreview(data) {
+    previewResult.classList.remove("hidden");
+    previewSummary.textContent = (data.total_valid || 0) + " valid row(s), " + (data.total_errors || 0) + " error(s)";
+    previewTbody.innerHTML = "";
+    (data.valid || []).slice(0, 50).forEach(function(r) {
+      var tr = document.createElement("tr");
+      tr.className = "border-b border-slate-700/50";
+      tr.innerHTML = "<td class=\"py-2 px-4 text-slate-200\">" + (r.tool_id_number || "") + "</td><td class=\"py-2 px-4 text-slate-300\">" + (r.tool_name || "") + "</td><td class=\"py-2 px-4 text-slate-400\">" + (r.tool_location || "") + "</td><td class=\"py-2 px-4 text-slate-400\">" + (r.tool_status || "") + "</td>";
+      previewTbody.appendChild(tr);
+    });
+    if ((data.errors || []).length > 0) {
+      previewErrors.classList.remove("hidden");
+      previewErrors.textContent = data.errors.map(function(e) { return "Row " + e.row + ": " + e.message; }).join("; ");
+    } else {
+      previewErrors.classList.add("hidden");
+    }
+  }
+
+  btnPreview.addEventListener("click", function() {
+    var file = getFile();
+    if (!file) { alert("Select a file first."); return; }
+    var fd = new FormData();
+    fd.append("file", file);
+    fetch("/api/import/preview", { method: "POST", body: fd })
+      .then(function(r) { return r.json(); })
+      .then(showPreview)
+      .catch(function() { alert("Preview failed."); });
+  });
+
+  btnImport.addEventListener("click", function() {
+    var file = getFile();
+    if (!file) { alert("Select a file first."); return; }
+    if (!confirm("Import tools from this file? Existing tools (same tool_id_number) will be updated.")) return;
+    btnImport.disabled = true;
+    var fd = new FormData();
+    fd.append("file", file);
+    fetch("/api/import/tools", { method: "POST", body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        importResult.classList.remove("hidden");
+        importSummary.textContent = "Created: " + (data.created || 0) + ", Updated: " + (data.updated || 0) + (data.errors && data.errors.length ? ". " + data.errors.length + " error(s)." : ".");
+        if (data.errors && data.errors.length > 0) {
+          importErrors.classList.remove("hidden");
+          importErrors.textContent = data.errors.map(function(e) { return "Row " + e.row + ": " + e.message; }).join("; ");
+        } else {
+          importErrors.classList.add("hidden");
+        }
+      })
+      .catch(function() { alert("Import failed."); })
+      .finally(function() { btnImport.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

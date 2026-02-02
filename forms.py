@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, DateTimeField, SelectField
+from wtforms import StringField, SubmitField, DateTimeField, SelectField, DateField
 from wtforms.validators import DataRequired, ValidationError, Optional
 from datetime import datetime
 
@@ -35,6 +35,7 @@ class CheckInOutForm(FlaskForm):
     tool_id_number = StringField('Tool ID', validators=[DataRequired(), validate_tool_id])
     job_id = StringField('Job/Project ID', validators=[Optional()])
     condition = SelectField('Condition', choices=CONDITION_CHOICES, validators=[Optional()])
+    return_by = DateField('Return by (optional)', format='%Y-%m-%d', validators=[Optional()])  # Checkout only
     submit = SubmitField('Submit')
 
 class CheckOutForm(FlaskForm):

@@ -25,6 +25,10 @@
       <p class="text-slate-400 text-sm font-medium mb-1">Calibration Overdue</p>
       <p class="text-3xl font-bold {% if calibration_overdue %}text-amber-400{% else %}text-slate-500{% endif %}">{{ calibration_overdue }}</p>
     </div>
+    <div class="stat-card bg-slate-800/80 border border-slate-700 rounded-xl p-6 cursor-move hover:border-rose-500/50 transition-colors" data-card-id="overdue-returns" data-tooltip="overdue-returns">
+      <p class="text-slate-400 text-sm font-medium mb-1">Overdue Returns</p>
+      <p class="text-3xl font-bold {% if overdue_returns_count %}text-rose-400{% else %}text-slate-500{% endif %}">{{ overdue_returns_count }}</p>
+    </div>
   </div>
 
   <!-- Enhanced: Category breakdown + Calibration + Usage trend -->
@@ -96,6 +100,38 @@
     </div>
   </div>
 
+  <!-- Overdue Returns (return-by date passed, tool still out) -->
+  {% if overdue_returns %}
+  <div class="bg-slate-800/80 border border-rose-500/50 rounded-xl overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+      <h3 class="font-semibold text-slate-200">Overdue Returns</h3>
+      <a href="{{ url_for('main.reports_page') }}" class="text-sm text-sky-400 hover:text-sky-300">Reports →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-700">
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Tool ID</th>
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Tool Name</th>
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Checked out by</th>
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Return by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in overdue_returns %}
+          <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
+            <td class="py-3 px-6 text-slate-200">{{ r.tool_id_number }}</td>
+            <td class="py-3 px-6 text-slate-300">{{ r.tool_name }}</td>
+            <td class="py-3 px-6 text-slate-300">{{ r.username }}</td>
+            <td class="py-3 px-6 text-rose-400">{{ r.return_by.strftime('%Y-%m-%d') if r.return_by else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Recent Activity -->
   <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden" data-tooltip="recent-activity">
     <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
@@ -154,7 +190,7 @@
         return ids;
       }
     } catch (e) {}
-    return ['total-tools', 'in-stock', 'checked-out', 'cal-overdue'];
+    return ['total-tools', 'in-stock', 'checked-out', 'cal-overdue', 'overdue-returns'];
   }
 
   function saveOrder() {

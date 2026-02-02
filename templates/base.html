@@ -37,6 +37,9 @@
         <a href="{{ url_for('main.reports_page') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors {% if request.endpoint == 'main.reports_page' %}active{% endif %}">
           <span class="text-lg">📑</span> Reports
         </a>
+        <a href="{{ url_for('main.import_page') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors {% if request.endpoint == 'main.import_page' %}active{% endif %}">
+          <span class="text-lg">📥</span> Import
+        </a>
         <a href="{{ url_for('main.logs_page') }}" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors {% if request.endpoint == 'main.logs_page' %}active{% endif %}">
           <span class="text-lg">📋</span> Logs
         </a>

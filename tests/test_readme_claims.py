@@ -111,10 +111,10 @@ class TestInventoryStatusReport:
 class TestReadmeNotImplemented:
     """README claims that are NOT implemented - documented for tracking."""
 
-    def test_email_reminders_not_implemented(self, app):
-        """README: Email reminders - not in codebase."""
+    def test_email_reminders_implemented(self, app):
+        """README: Email reminders - now implemented via calibration-reminders API."""
         rules = [r.rule for r in app.url_map.iter_rules()]
-        assert not any("remind" in r.lower() or "email" in r.lower() for r in rules)
+        assert any("calibration-reminders" in r for r in rules)
 
     def test_job_tracking_in_flow(self, app):
         """README: What job it was used on - job_id now in form and CheckoutHistory."""
