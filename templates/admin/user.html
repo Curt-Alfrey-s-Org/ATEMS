@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- .html -->
+
+{% extends 'admin/common.html' %}
+
+{% block content %}
+
+    
+    <header>
+        <h3>Create User</h3>
+    </header>
+    
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+
+    <form method="POST" action="{{ url_for('routes.create_user') }}">
+        {{ form.hidden_tag() }}
+        {{ form.csrf_token }}
+        <label for="username"> Username:</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password"> Password:</label>
+        <input type="password" id="password" name="password" required>
+        <label for="email"> Email:</label>
+        <input type="text" id="email" name="email" required>
+        <label for="badge_id"> Badge_ID:</label>
+        <input type="text" id="badge_id" name="badge_id" required>
+        <label for="phone"> Phone:</label>
+        <input type="text" id="phone" name="phone" required>
+        <label for="dept">Department:</label>
+        <input type="text" id="dept" name="dept" required>
+        <label for="supervisor_username">Supervisor UserName:</label>
+        <input type="text" id="supervisor_username" name="supervisor_username" required>
+        <label for="supervisor_email">Supervisor Email:</label>
+        <input type="text" id="supervisor_email" name="supervisor_email" required>
+        <label for="manager_name">Manager Name:</label>
+        <input type="text" id="manager_name" name="manager_name" required>
+        <label for="manager_email">Manager Email:</label>
+        <input type="text" id="manager_email" name="manager_email" required>
+        <input type="submit" value="Create User">
+        <label for="role">role:</label>
+        <select multiple id="role" name="role[]">
+            <option value="admin">Admin</option>
+            <option value="tech">Tech</option>
+            <option value="customer">Customer</option>
+        </select>
+        <label for="permission">permission:</label>
+        <select multiple id="permission" name="permission[]">
+            <option value="permission1">Permission 1</option>
+            <option value="permission2">Permission 2</option>
+            <!-- add more permission as needed -->
+        </select>
+        <input type="submit" value="Create User">
+    </form>
+            
+    
+    
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+
+
+
+
+
+    <header>
+        <h3>Update User Info</h3>
+    </header>
+
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+    
+
+    <div id="forms-container">
+        <form id="update-form" action="{{ url_for('update_user') }}" method="post">
+            {{ form.hidden_tag() }}
+            {{ form.csrf_token }}
+            <label for="update_email">Email of User to Update:</label>
+            <input type="text" id="update_email" name="update_email" required>
+            <label for="update_password">New Password:</label>
+            <input type="password" id="update_password" name="update_password" required>
+            <label for="update_admin_access">Admin Access:</label>
+            <input type="checkbox" id="update_admin_access" name="update_admin_access">
+            <button type="submit">Update User</button>
+        </form>
+        
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+
+
+
+
+
+    <header>
+        <h4>Disable Customer Account</h4>
+    </header>
+
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+
+        <form id="disable-form" action="{{ url_for('disable_user') }}" method="post">
+            {{ form.hidden_tag() }}
+            {{ form.csrf_token }}
+            <label for="disable_username">Username of User to Disable:</label>
+            <input type="text" id="disable_username" name="disable_username" required>
+            <button type="submit">Disable User</button>
+        </form>
+    </div>
+
+
+
+
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+
+
+
+
+
+    <header>
+        <h5> Console</h5>
+    </header>
+
+    <div style="border-top: 4px double black; margin: 20px 0; width: 100%;"></div>
+
+    <!-- Embed a console for  interactions -->
+    <textarea rows="30" cols="50" readonly>
+        Welcome to the  Console. Type commands here...
+    </textarea>
+
+{% endblock %}
+</html>

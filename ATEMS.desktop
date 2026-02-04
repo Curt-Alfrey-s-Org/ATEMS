@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ATEMS
+Comment=Automated Tool and Equipment Management System
+Exec=x-terminal-emulator -e "bash -c '/home/n4s1/ATEMS/start_atems.sh; exec bash'"
+Icon=/home/n4s1/ATEMS/static/images/blueWrench.jpg
+Terminal=false
+Categories=Development;Office;
+StartupNotify=true

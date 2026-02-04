@@ -1,0 +1,41 @@
+{% extends "admin/common.html" %}
+
+
+
+{% block content %}
+{{ super() }}
+
+
+<h1>Tools</h1>
+    <table>
+        <tr>
+            <th>Category</th>
+            <th>Subcategory</th>
+        </tr>
+        {% for tool in tools %}
+        <tr>
+            <td>{{ tool.category }}</td>
+            <td>{{ tool.subcategory }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div>
+            {{ form.category.label }}<br>
+            {{ form.category(size=32) }}
+        </div>
+        <div>
+            {{ form.subcategory.label }}<br>
+            {{ form.subcategory(size=32) }}
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+
+
+
+
+<script src="{{ url_for('static', filename='js/tools.js') }}"></script>
+{% endblock %}
+</html>

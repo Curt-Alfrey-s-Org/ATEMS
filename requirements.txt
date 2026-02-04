@@ -1,0 +1,56 @@
+# Core
+python-dotenv==1.2.1
+Flask==3.1.2
+Werkzeug==3.1.5
+Jinja2==3.1.6
+click==8.1.7
+itsdangerous==2.2.0
+
+# Database
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.46
+alembic==1.18.3
+Flask-Migrate==4.1.0
+PyMySQL==1.1.0
+
+# Admin
+Flask-Admin==2.0.2
+
+# Authentication
+Flask-Login==0.6.3
+Flask-HTTPAuth==4.8.0
+bcrypt==5.0.0
+
+# Forms
+Flask-WTF==1.2.2
+WTForms==3.2.1
+WTForms-Components==0.10.5
+email-validator==2.1.0.post1
+
+# Frontend
+Bootstrap-Flask==2.3.3
+
+# REST APIs
+Flask-RESTful==0.3.10
+
+# Real-time Communication
+Flask-SocketIO==5.3.6
+python-socketio==5.11.0
+python-engineio==4.8.2
+
+# Utilities
+cryptography==46.0.4
+requests==2.32.5
+pillow==12.1.0
+reportlab==4.4.9
+openpyxl==3.1.5
+
+# Testing
+pytest==9.0.2
+pytest-cov==7.0.0
+
+# Development
+flask-shell==0.1.8
+
+# Production (gunicorn for deployment)
+gunicorn==23.0.0

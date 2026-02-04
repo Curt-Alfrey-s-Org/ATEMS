@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ATEMS Tests
+Comment=Run ATEMS test suite
+Exec=x-terminal-emulator -e "bash -c '/home/n4s1/ATEMS/run_atems_tests.sh; exec bash'"
+Icon=/home/n4s1/ATEMS/static/images/gear.jpg
+Terminal=false
+Categories=Development;Office;
+StartupNotify=true

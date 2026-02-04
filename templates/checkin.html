@@ -1,0 +1,36 @@
+<!-- check-in.html -->
+
+{% extends "admin/common.html" %}
+
+{% block content %}
+
+
+
+    <div style="height: 25px;"></div>    
+
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Check-In</h4>
+                <div style="height: 25px;"></div>    
+                <form id="myForm" method="POST">
+                    <label for="tool_id_number">Tool ID</label>
+                    <input type="text" id="tool_id_number" name="tool_id_number" required>
+                    
+                </form>
+            </div>            
+        </div>
+    </div>
+          
+
+
+    <div style="height: 25px;"></div>    
+
+
+    
+
+<script src="{{ url_for('static', filename='styles/js/checkinout.js') }}"></script>
+{% endblock %}
+</html>

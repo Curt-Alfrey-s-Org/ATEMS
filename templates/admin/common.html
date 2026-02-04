@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "admin/master.html" %}
+
+
+    <!-- common.html -->
+    {% block head_css %}
+    {{ super() }}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATEMS - Automated Tool and Equipment Management System</title>
+    <link rel="icon" href="{{ url_for('static', filename='/images/blueWrench.jpg') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/styles/styles.css') }}">
+    {% endblock head_css %}
+    
+    
+    
+    
+    {% block body %}    
+    
+    
+    
+    <!-- Flag -->
+    <div id="top-left">
+        <img src="{{ url_for('static', filename='images/american_flag_and_eagle.jpg') }}" alt="American Flag">
+    </div>
+    
+    <!-- Flag -->
+    <div id="top-right">
+        <img src="{{ url_for('static', filename='images/pow_flag_and_eagle.jpg') }}" alt="POW Flag">
+    </div>
+    
+    
+    
+    
+    <!-- Header -->
+    <header>
+        <h2>ATEMS - Automated Tool and Equipment Management System</h2>
+        <section>
+            {% if current_user.is_authenticated %}
+            <p>Welcome, {{ current_user.username }}!</p>
+            {% else %}
+            <p>Welcome, Guest!</p>
+            {% endif %}
+            <!-- Flash Messages -->
+            <div id="flash-messages">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <ul class=flashes>
+                    {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% endwith %}
+            </div>    
+        </section>
+    </header>
+    
+
+
+
+    
+    <message>
+        <!-- JavaScript Messages -->
+        <div id="js-messages"></div>
+    </message>
+    
+    <!-- Main Content -->
+   
+    
+    
+    
+    
+    {% block content %}
+    <!-- General space for external content -->
+        <div id="external-content">
+        <!-- Any external content from other pages can be included here using Jinja2 syntax -->
+        </div>
+    {% endblock %}
+
+
+
+
+
+    <!-- footer -->
+    <footer>
+        
+            <div id="footer-left">
+                <img src="{{ url_for('static', filename='images/f-117.jpg') }}" alt="f-117">
+            </div>
+            <div id="footer-center"> 
+                <p id="footer-info">Created, Designed, and Hosted by Curtis Alfrey</p>
+                <p id="footer-info">Air Force Veteran https://www.curtisalfrey.com</p>
+            </div>
+            <div id="footer-right">
+                <img src="{{ url_for('static', filename='images/f-16icon.jpeg') }}" alt="f-16icon">
+            </div>
+        
+    </footer>
+
+
+
+     
+<script src="{{ url_for('static', filename='styles/js/messages.js') }}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+{% endblock body %}
+</html>

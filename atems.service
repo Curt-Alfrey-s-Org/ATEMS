@@ -1,0 +1,21 @@
+# systemd unit for ATEMS (ansible user)
+# Copy to /etc/systemd/system/atems.service then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now atems
+
+[Unit]
+Description=ATEMS - Tool & Equipment Management (Flask/gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=ansible
+Group=ansible
+WorkingDirectory=/home/ansible/atems
+Environment="PATH=/home/ansible/atems/.venv/bin"
+ExecStart=/home/ansible/atems/.venv/bin/gunicorn -c /home/ansible/atems/gunicorn.conf.py "atems:create_app()"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,34 @@
+<!-- check-out.html -->
+
+{% extends "admin/common.html" %}
+
+{% block content %}
+
+
+    <div style="height: 25px;"></div>    
+
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Check-Out</h4>
+                <div style="height: 25px;"></div>    
+                <form id="myForm" method="POST">
+                    <label for="username_or_badge_id">Username or Badge ID</label>
+                    <input type="text" id="username_or_badge_id" name="username_or_badge_id" required>
+                    <label for="for_how_many_days">For how many days? Default=1</label>
+                    <input type="text" id="for_how_many_days" name="for_how_many_days" required value="1">
+                    <label for="tool_id_number">Tool ID</label>
+                    <input type="text" id="tool_id_number" name="tool_id_number" required>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div style="height: 25px;"></div>    
+
+
+<script src="{{ url_for('static', filename='styles/js/checkinout.js') }}"></script>
+{% endblock %}
+</html>

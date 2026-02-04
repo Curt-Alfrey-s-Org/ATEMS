@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - ATEMS</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/blueWrench.jpg') }}" type="image/x-icon">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/atems.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen antialiased flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
+  <div class="absolute inset-0 bg-[url('{{ url_for('static', filename='images/gear.jpg') }}')] opacity-5 bg-cover bg-center"></div>
+  <div class="relative w-full max-w-md">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

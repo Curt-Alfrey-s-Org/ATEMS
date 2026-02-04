@@ -1,0 +1,238 @@
+/* styles.css */
+
+/* Admin: top corner images - resized and contained */
+#top-left {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 100px;
+    height: 52px;
+    overflow: hidden;
+    z-index: 10;
+}
+#top-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left top;
+    display: block;
+}
+
+#top-right {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 100px;
+    height: 52px;
+    overflow: hidden;
+    z-index: 10;
+}
+#top-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: right top;
+    display: block;
+}
+
+
+
+header,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6{
+    text-align: center; /*centers text in navbar items*/
+    top: auto; /*centers text in navbar items*/
+    left: auto; /*centers text in navbar items*/
+    width: 100%; /*makes navbar items horizontal*/
+    background-color: #003268; /*background color of navbar*/
+    margin: auto; /*centers navbar items*/
+    padding: 5px; /*distance between border and text*/
+    z-index: auto; /*makes navbar items appear on top of other items*/
+    font-size: 36px; /*size of text in navbar items*/
+    color: white; /*color of text in navbar items*/
+}
+
+ 
+header p {
+    color: #ffffff; /*color of text in navbar items*/
+    font-size: 24px; /*size of text in navbar items*/
+    text-align: center; /*centers text in navbar items*/
+}
+
+
+.flashes .success {
+    background-color: rgb(0, 95, 0); /*background color of navbar items*/
+    color: white; /*color of text in navbar items*/
+    margin-bottom: 10px; /*distance between navbar items*/
+    padding: 10px; /*distance between border and text*/
+    border-radius: 4px; /*rounds the corners*/
+    font-size: 24px; /*size of text in navbar items*/
+    text-align: center; /*centers text in navbar items*/
+}
+
+.flashes .error {
+    background-color: rgb(194, 0, 0); /*background color of navbar items*/
+    color: white; /*color of text in navbar items*/
+    margin-bottom: 10px; /*distance between navbar items*/
+    padding: 10px; /*distance between border and text*/
+    border-radius: 4px; /*rounds the corners*/
+    font-size: 24px; /*size of text in navbar items*/
+    text-align: center; /*centers text in navbar items*/
+}
+
+.horizontal-menu {
+    display: flex; /*makes navbar items horizontal*/
+    justify-content: center; /*centers navbar items*/
+    align-items: center; /*centers items vertically in the container*/
+    background-color: #003268; /*background color of navbar*/
+    color: #ffffff; /*color of text in navbar items*/
+    font-size: 22px; /*size of text in navbar items*/
+    padding: 5px; /*distance between border and text*/
+    width: 100%; /*makes navbar items horizontal*/
+    bottom: 0; /*distance from bottom of screen*/
+    gap: 40px; /*horizontal spacing between items*/
+    margin: auto; /*centers navbar items*/
+}
+
+body {
+    display: flex; /*makes navbar items horizontal*/
+    flex-direction: column; /*makes navbar items horizontal*/
+    min-height: auto; /*makes navbar items horizontal*/
+    text-align: center; /*centers text in navbar items*/
+    margin: auto; /*centers navbar items*/
+    font-family: Arial, Helvetica, sans-serif; /*font of text in navbar items*/
+    color: white; /*color of text in navbar items*/
+    background-color: rgb(56, 56, 56); /*background color of navbar*/
+    
+}
+
+#message {
+    display: flex; /*makes navbar items horizontal*/
+    justify-content: center; /*centers navbar items*/
+    align-items: center; /*centers items vertically in the container*/
+    background-color: #ad0000; /*background color of navbar*/
+    color: #ffffff; /*color of text in navbar items*/
+    font-size: 22px; /*size of text in navbar items*/
+    padding: 5px; /*distance between border and text*/
+    width: 100%; /*makes navbar items horizontal*/
+    bottom: 0; /*distance from bottom of screen*/
+    gap: 40px; /*horizontal spacing between items*/
+    margin: auto; /*centers navbar items*/
+
+}
+
+.list-group-item {
+    display: flex; /*makes navbar items horizontal*/
+    justify-content: ; /*centers navbar items*/
+    align-items: left; /*centers items vertically in the container*/
+    background-color: black; /*background color of navbar*/
+    color: #ffffff; /*color of text in navbar items*/
+    font-size: 22px; /*size of text in navbar items*/
+    padding: 5px; /*distance between border and text*/
+    width: 100%; /*makes navbar items horizontal*/
+    bottom: 0; /*distance from bottom of screen*/
+    gap: 40px; /*horizontal spacing between items*/
+    margin: auto; /*centers navbar items*/
+}
+
+.span {
+    display: flex; /*makes navbar items horizontal*/
+    justify-content: right; /*centers navbar items*/
+    align-items: center; /*centers items vertically in the container*/
+}
+footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #003268;
+    color: #ffffff;
+    padding: 12px 16px;
+    gap: 16px;
+    min-height: 72px;
+}
+
+
+
+#footer-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex: 1;
+    padding: 0 1rem;
+}
+
+/* Admin: footer images - resized and contained */
+#footer-left {
+    flex-shrink: 0;
+    width: 80px;
+    height: 48px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+#footer-left img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+    display: block;
+}
+
+#footer-right {
+    flex-shrink: 0;
+    width: 80px;
+    height: 48px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+#footer-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: right center;
+    display: block;
+}
+
+table {
+    display: flex; /*makes navbar items horizontal*/
+    justify-content: center; /*centers navbar items*/
+    align-items: center; /*centers items vertically in the container*/
+    background-color: #003268; /*background color of navbar*/
+    color: #ffffff; /*color of text in navbar items*/
+    font-size: 22px; /*size of text in navbar items*/
+    padding: auto; /*distance between border and text*/
+    width: auto; /*makes navbar items horizontal*/
+    bottom: auto; /*distance from bottom of screen*/
+    gap: auto; /*horizontal spacing between items*/
+    margin: auto; /*centers navbar items*/
+
+}
+
+
+
+/* Stat cards (dashboard) */
+.stat-card {
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+    border-color: rgba(var(--bs-primary-rgb), 0.5);
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.3);
+}
+
+/* Mobile-friendly check-in form */
+@media (max-width: 576px) {
+    .checkin-form .form-control { font-size: 1.1rem; padding: 0.75rem; }
+    .checkin-form .btn { padding: 0.75rem 1.5rem; font-size: 1.1rem; }
+}
+
+/* End of styles.css */

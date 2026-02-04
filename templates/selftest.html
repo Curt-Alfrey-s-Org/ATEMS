@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Self-Test{% endblock %}
+{% block page_title %}Self-Test{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <p class="text-slate-400 mb-6">Run self-tests to catch errors before they appear in logs. Integrated like Rankings-Bot.</p>
+
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+      <h3 class="font-semibold text-slate-200">Current Status</h3>
+      <button type="button" onclick="refreshHealth()" class="text-sm text-sky-400 hover:text-sky-300">Refresh</button>
+    </div>
+    <div id="health-status" class="p-6">
+      <div class="flex items-center gap-2 text-slate-500">
+        <span class="inline-block w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+        Loading...
+      </div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-slate-700">
+      <button type="button" id="run-tests-btn" onclick="runTests()"
+        class="w-full py-3 px-4 rounded-lg font-semibold bg-sky-600 hover:bg-sky-500 text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span id="run-btn-text">Run Full Test Suite</span>
+        <span id="run-btn-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+      </button>
+    </div>
+  </div>
+
+  <div id="run-results" class="mt-6 hidden"></div>
+</div>
+
+<script>
+  function apiBase() {
+    return window.location.origin;
+  }
+
+  function renderHealth(data) {
+    const el = document.getElementById('health-status');
+    if (!data || !data.self_test) {
+      el.innerHTML = '<div class="text-red-400">Could not load health status.</div>';
+      return;
+    }
+    const st = data.self_test;
+    const passed = st.passed;
+    const pc = st.passed_count ?? 0;
+    const total = st.total ?? 0;
+    const statusClass = passed ? 'text-emerald-400' : 'text-red-400';
+    const statusText = passed ? 'PASS' : 'FAIL';
+    const dotClass = passed ? 'bg-emerald-500' : 'bg-red-500';
+    let html = `
+      <div class="flex items-center justify-between mb-4">
+        <span class="flex items-center gap-2 ${statusClass}">
+          <span class="w-3 h-3 rounded-full ${dotClass}"></span>
+          ${statusText} (${pc}/${total})
+        </span>
+        <span class="text-sm text-slate-400">${data.status}</span>
+      </div>
+      <div class="space-y-2">
+    `;
+    (st.results || []).forEach(r => {
+      const sym = r.passed ? '✓' : '✗';
+      const cls = r.passed ? 'text-emerald-400' : 'text-red-400';
+      const err = r.error ? ` <span class="text-slate-500 text-sm">${r.error}</span>` : '';
+      html += `<div class="${cls}">${sym} ${r.name}${err}</div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  async function refreshHealth() {
+    try {
+      const r = await fetch(apiBase() + '/api/system/health');
+      const data = await r.json();
+      renderHealth(data);
+    } catch (e) {
+      document.getElementById('health-status').innerHTML =
+        '<div class="text-red-400">Failed to fetch health: ' + e.message + '</div>';
+    }
+  }
+
+  async function runTests() {
+    const btn = document.getElementById('run-tests-btn');
+    const text = document.getElementById('run-btn-text');
+    const spinner = document.getElementById('run-btn-spinner');
+    const resultsEl = document.getElementById('run-results');
+
+    btn.disabled = true;
+    text.textContent = 'Running...';
+    spinner.classList.remove('hidden');
+    resultsEl.classList.add('hidden');
+
+    try {
+      const r = await fetch(apiBase() + '/api/system/run-tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await r.json();
+
+      resultsEl.classList.remove('hidden');
+      const ok = data.success;
+      const borderCls = ok ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-red-500/30 bg-red-500/10';
+      let html = `
+        <div class="rounded-xl border p-6 ${borderCls}">
+          <div class="flex items-center justify-between mb-4">
+            <span class="font-semibold">${ok ? '✓ All Tests Passed' : '✗ Some Tests Failed'}</span>
+            <span class="text-sm text-slate-400">${data.duration_s || 0}s</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <div class="text-center p-2 rounded bg-slate-700/50"><div class="font-bold">${data.total || 0}</div><div class="text-xs text-slate-400">Total</div></div>
+            <div class="text-center p-2 rounded bg-emerald-500/20"><div class="font-bold text-emerald-400">${data.passed || 0}</div><div class="text-xs text-slate-400">Passed</div></div>
+            <div class="text-center p-2 rounded bg-red-500/20"><div class="font-bold text-red-400">${data.failed || 0}</div><div class="text-xs text-slate-400">Failed</div></div>
+            <div class="text-center p-2 rounded bg-amber-500/20"><div class="font-bold text-amber-400">${data.warnings || 0}</div><div class="text-xs text-slate-400">Warnings</div></div>
+          </div>
+      `;
+      if (data.failed_tests && data.failed_tests.length) {
+        html += '<div class="space-y-2"><h4 class="font-medium text-red-400">Failed Tests:</h4>';
+        data.failed_tests.forEach(t => {
+          html += `<div class="p-2 rounded bg-red-500/10 text-sm">✗ ${t.name}${t.error ? ': ' + t.error : ''}</div>`;
+        });
+        html += '</div>';
+      }
+      if (data.error) {
+        html += `<div class="mt-4 p-2 rounded bg-red-500/10 text-red-400">${data.error}</div>`;
+      }
+      if (data.output) {
+        html += '<pre class="mt-4 p-4 rounded bg-slate-900 text-xs overflow-x-auto max-h-48">' + data.output.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+      }
+      html += '</div>';
+      resultsEl.innerHTML = html;
+
+      refreshHealth();
+    } catch (e) {
+      resultsEl.classList.remove('hidden');
+      resultsEl.innerHTML = '<div class="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400">Failed to run tests: ' + e.message + '</div>';
+    } finally {
+      btn.disabled = false;
+      text.textContent = 'Run Full Test Suite';
+      spinner.classList.add('hidden');
+    }
+  }
+
+  refreshHealth();
+</script>
+{% endblock %}

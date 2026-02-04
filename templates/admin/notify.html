@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% extends "admin/common.html" %}
+
+
+
+
+
+{% block content %}
+{{ super() }}
+<div style="height: 25px;"></div>    
+
+<h1>Admin Notifications</h1>
+
+    <div style="height: 25px;"></div>    
+
+            <div class="panel-body">
+                <div class="list-group">
+                    <!-- Message Sent -->
+                    <a href="#" class="list-group-item">
+                        <i class="fa fa-envelope fa-fw"></i> Message Sent
+                        <span class="pull-right text-muted small"><em>Just now</em></span>
+                    </a>
+
+                    <!-- New Task -->
+                    <a href="#" class="list-group-item">
+                        <i class="fa fa-tasks fa-fw"></i> New Task
+                        <span class="pull-right text-muted small"><em>2 minutes ago</em></span>
+                    </a>
+
+                    <!-- Server Rebooted -->
+                    <a href="#" class="list-group-item">
+                        <i class="fa fa-refresh fa-fw"></i> Server Rebooted
+                        <span class="pull-right text-muted small"><em>5 minutes ago</em></span>
+                    </a>
+
+                    <!-- Server Crash -->
+                    <a href="#" class="list-group-item">
+                        <i class="fa fa-exclamation-triangle fa-fw"></i> Server Crash
+                        <span class="pull-right text-muted small"><em>10 minutes ago</em></span>
+                    </a>
+    <div style="height: 25px;"></div>    
+
+                    
+                </div>
+                <a href="#" class="btn btn-primary">View All Alerts</a>
+            </div>
+        
+    <div style="height: 25px;"></div>    
+        
+{% endblock %}
+</html>
+
+    
+
+

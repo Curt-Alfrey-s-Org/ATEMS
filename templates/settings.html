@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <!-- Presets -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-200 mb-4">Presets</h2>
+    <p class="text-slate-400 text-sm mb-4">Apply a preset to quickly configure ATEMS for your use case.</p>
+    <div class="flex flex-wrap gap-4">
+      <button type="button" data-preset="small-shop" class="px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium transition-colors">
+        Small Shop
+      </button>
+      <button type="button" data-preset="large-factory" class="px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium transition-colors">
+        Large Factory
+      </button>
+      <button type="button" data-preset="demo" class="px-6 py-3 rounded-lg bg-sky-700 hover:bg-sky-600 border border-sky-600 text-slate-200 font-medium transition-colors">
+        Demo Site
+      </button>
+    </div>
+    <p class="text-slate-500 text-xs mt-3">Settings are saved in your browser (localStorage).</p>
+  </div>
+
+  <!-- Tool Crib -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-200 mb-4">Tool Crib</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Default tools per page</label>
+        <select id="tools_per_page" class="w-full max-w-xs px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+          <option value="250">250</option>
+          <option value="500">500</option>
+        </select>
+        <p class="text-slate-500 text-xs mt-1">Number of tools shown in lists (Admin, API).</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Recent activity rows</label>
+        <select id="recent_activity_rows" class="w-full max-w-xs px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+        <p class="text-slate-500 text-xs mt-1">Rows shown in Dashboard recent activity.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calibration -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-200 mb-4">Calibration</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Reminder days before due</label>
+        <input type="number" id="cal_reminder_days" min="1" max="90" value="30" class="w-full max-w-xs px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <p class="text-slate-500 text-xs mt-1">Show calibration reminder this many days before due date.</p>
+      </div>
+      <div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="cal_show_overdue_only" class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500">
+          <span class="text-sm text-slate-300">Highlight overdue only on dashboard</span>
+        </label>
+        <p class="text-slate-500 text-xs mt-1 ml-6">When enabled, calibration widget shows overdue count only.</p>
+      </div>
+      <div class="pt-4 border-t border-slate-600">
+        <h3 class="text-sm font-semibold text-slate-300 mb-2">Email reminders</h3>
+        <p class="text-slate-500 text-xs mb-2">Send a summary of tools due or overdue for calibration to configured recipients. Set MAIL_* and CALIBRATION_REMIND_TO in .env to enable.</p>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button type="button" id="sendCalRemindersBtn" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium transition-colors">
+            Send calibration reminders now
+          </button>
+          <span id="calRemindersStatus" class="text-sm text-slate-400">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appearance -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-200 mb-4">Appearance</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Theme</label>
+        <select id="theme" class="w-full max-w-xs px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="dark" selected>Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+      <div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="show_tooltips" checked class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500">
+          <span class="text-sm text-slate-300">Show tooltips and help bubbles</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-200 mb-4">Logs</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Default log line limit</label>
+        <select id="log_line_limit" class="w-full max-w-xs px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="100">100</option>
+          <option value="250" selected>250</option>
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+        </select>
+      </div>
+      <div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="log_auto_refresh" class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500">
+          <span class="text-sm text-slate-300">Auto-refresh logs (5s)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-4">
+    <button type="button" id="saveBtn" class="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+      Save settings
+    </button>
+    <button type="button" id="resetBtn" class="px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 font-medium transition-colors">
+      Reset to defaults
+    </button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const KEY = 'atems_settings';
+
+  const DEFAULTS = {
+    tools_per_page: 100,
+    recent_activity_rows: 10,
+    cal_reminder_days: 30,
+    cal_show_overdue_only: false,
+    theme: 'dark',
+    show_tooltips: true,
+    log_line_limit: 250,
+    log_auto_refresh: false
+  };
+
+  const PRESETS = {
+    'small-shop': { tools_per_page: 50, recent_activity_rows: 5, cal_reminder_days: 14, cal_show_overdue_only: true, theme: 'dark', show_tooltips: true, log_line_limit: 100, log_auto_refresh: false },
+    'large-factory': { tools_per_page: 250, recent_activity_rows: 20, cal_reminder_days: 30, cal_show_overdue_only: false, theme: 'dark', show_tooltips: true, log_line_limit: 500, log_auto_refresh: true },
+    'demo': { tools_per_page: 100, recent_activity_rows: 10, cal_reminder_days: 30, cal_show_overdue_only: false, theme: 'dark', show_tooltips: true, log_line_limit: 250, log_auto_refresh: false }
+  };
+
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY) || '{}');
+      const merged = { ...DEFAULTS, ...s };
+      document.getElementById('tools_per_page').value = merged.tools_per_page;
+      document.getElementById('recent_activity_rows').value = merged.recent_activity_rows;
+      document.getElementById('cal_reminder_days').value = merged.cal_reminder_days;
+      document.getElementById('cal_show_overdue_only').checked = merged.cal_show_overdue_only;
+      document.getElementById('theme').value = merged.theme;
+      document.getElementById('show_tooltips').checked = merged.show_tooltips;
+      document.getElementById('log_line_limit').value = merged.log_line_limit;
+      document.getElementById('log_auto_refresh').checked = merged.log_auto_refresh;
+    } catch (e) {}
+  }
+
+  function getForm() {
+    return {
+      tools_per_page: parseInt(document.getElementById('tools_per_page').value, 10),
+      recent_activity_rows: parseInt(document.getElementById('recent_activity_rows').value, 10),
+      cal_reminder_days: parseInt(document.getElementById('cal_reminder_days').value, 10),
+      cal_show_overdue_only: document.getElementById('cal_show_overdue_only').checked,
+      theme: document.getElementById('theme').value,
+      show_tooltips: document.getElementById('show_tooltips').checked,
+      log_line_limit: parseInt(document.getElementById('log_line_limit').value, 10),
+      log_auto_refresh: document.getElementById('log_auto_refresh').checked
+    };
+  }
+
+  function save() {
+    const s = getForm();
+    localStorage.setItem(KEY, JSON.stringify(s));
+    if (document.getElementById('log_line_limit').value) {
+      try {
+        const prefs = JSON.parse(localStorage.getItem('atems_log_prefs') || '{}');
+        prefs.lineLimit = document.getElementById('log_line_limit').value;
+        prefs.autoRefresh = document.getElementById('log_auto_refresh').checked;
+        localStorage.setItem('atems_log_prefs', JSON.stringify(prefs));
+      } catch (e) {}
+    }
+    alert('Settings saved.');
+  }
+
+  function applyPreset(presetId) {
+    const p = PRESETS[presetId];
+    if (!p) return;
+    document.getElementById('tools_per_page').value = p.tools_per_page;
+    document.getElementById('recent_activity_rows').value = p.recent_activity_rows;
+    document.getElementById('cal_reminder_days').value = p.cal_reminder_days;
+    document.getElementById('cal_show_overdue_only').checked = p.cal_show_overdue_only;
+    document.getElementById('theme').value = p.theme;
+    document.getElementById('show_tooltips').checked = p.show_tooltips;
+    document.getElementById('log_line_limit').value = p.log_line_limit;
+    document.getElementById('log_auto_refresh').checked = p.log_auto_refresh;
+    save();
+  }
+
+  function reset() {
+    if (!confirm('Reset all settings to defaults?')) return;
+    localStorage.removeItem(KEY);
+    load();
+    alert('Settings reset to defaults.');
+  }
+
+  function sendCalReminders() {
+    const btn = document.getElementById('sendCalRemindersBtn');
+    const statusEl = document.getElementById('calRemindersStatus');
+    if (!btn || !statusEl) return;
+    btn.disabled = true;
+    statusEl.textContent = 'Sending…';
+    fetch('/api/calibration-reminders/send', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sent) {
+          statusEl.textContent = data.message || 'Sent.';
+          statusEl.className = 'text-sm text-emerald-400';
+        } else {
+          statusEl.textContent = (data.message || 'Error') + (data.error ? ': ' + data.error : '');
+          statusEl.className = 'text-sm text-amber-400';
+        }
+      })
+      .catch(() => {
+        statusEl.textContent = 'Request failed.';
+        statusEl.className = 'text-sm text-red-400';
+      })
+      .finally(() => { btn.disabled = false; });
+  }
+
+  load();
+  loadCalRemindersStatus();
+  document.getElementById('saveBtn').addEventListener('click', save);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  if (document.getElementById('sendCalRemindersBtn')) {
+    document.getElementById('sendCalRemindersBtn').addEventListener('click', sendCalReminders);
+  }
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => applyPreset(btn.getAttribute('data-preset')));
+  });
+})();
+</script>
+{% endblock %}

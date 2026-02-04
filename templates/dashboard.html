@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Draggable Stat Cards -->
+  <div class="mb-4 flex items-center gap-2 text-slate-400 text-sm">
+    <span class="cursor-move">⋮⋮</span>
+    <span>Drag cards to reorder (saved per browser)</span>
+  </div>
+  <div id="dashboard-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="stat-card bg-slate-800/80 border border-slate-700 rounded-xl p-6 cursor-move hover:border-sky-500/50 transition-colors" data-card-id="total-tools" data-tooltip="total-tools">
+      <p class="text-slate-400 text-sm font-medium mb-1">Total Tools</p>
+      <p class="text-3xl font-bold text-slate-100">{{ total_tools }}</p>
+    </div>
+    <div class="stat-card bg-slate-800/80 border border-slate-700 rounded-xl p-6 cursor-move hover:border-emerald-500/50 transition-colors" data-card-id="in-stock" data-tooltip="in-stock">
+      <p class="text-slate-400 text-sm font-medium mb-1">In Stock</p>
+      <p class="text-3xl font-bold text-emerald-400">{{ in_stock }}</p>
+    </div>
+    <div class="stat-card bg-slate-800/80 border border-slate-700 rounded-xl p-6 cursor-move hover:border-sky-500/50 transition-colors" data-card-id="checked-out" data-tooltip="checked-out">
+      <p class="text-slate-400 text-sm font-medium mb-1">Checked Out</p>
+      <p class="text-3xl font-bold text-sky-400">{{ checked_out }}</p>
+    </div>
+    <div class="stat-card bg-slate-800/80 border border-slate-700 rounded-xl p-6 cursor-move hover:border-amber-500/50 transition-colors" data-card-id="cal-overdue" data-tooltip="calibration-overdue">
+      <p class="text-slate-400 text-sm font-medium mb-1">Calibration Overdue</p>
+      <p class="text-3xl font-bold {% if calibration_overdue %}text-amber-400{% else %}text-slate-500{% endif %}">{{ calibration_overdue }}</p>
+    </div>
+    <div class="stat-card bg-slate-800/80 border border-slate-700 rounded-xl p-6 cursor-move hover:border-rose-500/50 transition-colors" data-card-id="overdue-returns" data-tooltip="overdue-returns">
+      <p class="text-slate-400 text-sm font-medium mb-1">Overdue Returns</p>
+      <p class="text-3xl font-bold {% if overdue_returns_count %}text-rose-400{% else %}text-slate-500{% endif %}">{{ overdue_returns_count }}</p>
+    </div>
+  </div>
+
+  <!-- Enhanced: Category breakdown + Calibration + Usage trend -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Category breakdown -->
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-700">
+        <h3 class="font-semibold text-slate-200">Tools by Category</h3>
+      </div>
+      <div class="p-6 max-h-64 overflow-y-auto">
+        {% if category_breakdown %}
+        <ul class="space-y-2">
+          {% for c in category_breakdown[:10] %}
+          <li class="flex justify-between text-sm">
+            <span class="text-slate-300">{{ c.name }}</span>
+            <span class="text-slate-400 font-medium">{{ c.count }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-500 text-sm">No categories</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Calibration summary -->
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-700">
+        <h3 class="font-semibold text-slate-200">Calibration Due</h3>
+      </div>
+      <div class="p-6">
+        {% if calibration_summary %}
+        <div class="space-y-3">
+          {% for s in calibration_summary %}
+          <div class="flex items-center gap-3">
+            <span class="text-slate-400 text-sm w-28">{{ s.label }}</span>
+            <div class="flex-1 h-6 bg-slate-700 rounded overflow-hidden">
+              <div class="h-full rounded {% if s.color == 'amber' %}bg-amber-500/80{% elif s.color == 'yellow' %}bg-yellow-500/80{% elif s.color == 'blue' %}bg-blue-500/80{% else %}bg-emerald-500/80{% endif %}" style="width: {% if total_tools and total_tools > 0 %}{{ [(s.count / total_tools * 100), 100] | min | round(1) }}%{% else %}0%{% endif %}"></div>
+            </div>
+            <span class="text-slate-300 text-sm font-medium w-8">{{ s.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-slate-500 text-sm">No calibration data</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Usage trend (last 7 days) -->
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-700">
+        <h3 class="font-semibold text-slate-200">Checkouts (Last 7 Days)</h3>
+      </div>
+      <div class="p-6">
+        {% if usage_trend %}
+        <div class="flex items-end gap-2 h-32">
+          {% for u in usage_trend %}
+          <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="w-full bg-sky-500/60 rounded-t min-h-[4px]" style="height: {{ ((u.count / max_usage * 100) if max_usage else 0) | round }}px"></div>
+            <span class="text-xs text-slate-400">{{ u.day[-5:] if u.day else '-' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-slate-500 text-sm">No checkout data in last 7 days</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Returns (return-by date passed, tool still out) -->
+  {% if overdue_returns %}
+  <div class="bg-slate-800/80 border border-rose-500/50 rounded-xl overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+      <h3 class="font-semibold text-slate-200">Overdue Returns</h3>
+      <a href="{{ url_for('main.reports_page') }}" class="text-sm text-sky-400 hover:text-sky-300">Reports →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-700">
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Tool ID</th>
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Tool Name</th>
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Checked out by</th>
+            <th class="text-left py-3 px-6 text-slate-400 font-medium">Return by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in overdue_returns %}
+          <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
+            <td class="py-3 px-6 text-slate-200">{{ r.tool_id_number }}</td>
+            <td class="py-3 px-6 text-slate-300">{{ r.tool_name }}</td>
+            <td class="py-3 px-6 text-slate-300">{{ r.username }}</td>
+            <td class="py-3 px-6 text-rose-400">{{ r.return_by.strftime('%Y-%m-%d') if r.return_by else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent Activity -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden" data-tooltip="recent-activity">
+    <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+      <h3 class="font-semibold text-slate-200">Recent Activity</h3>
+      <a href="{{ url_for('admin.index') }}" class="text-sm text-sky-400 hover:text-sky-300">Admin →</a>
+    </div>
+    {% if recent_events %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-slate-700">
+            <th class="text-left py-4 px-6 text-slate-400 font-medium">Time</th>
+            <th class="text-left py-4 px-6 text-slate-400 font-medium">Action</th>
+            <th class="text-left py-4 px-6 text-slate-400 font-medium">Tool</th>
+            <th class="text-left py-4 px-6 text-slate-400 font-medium">User</th>
+            <th class="text-left py-4 px-6 text-slate-400 font-medium hidden md:table-cell">Job</th>
+            <th class="text-left py-4 px-6 text-slate-400 font-medium hidden md:table-cell">Condition</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in recent_events %}
+          <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+            <td class="py-4 px-6 text-slate-300">{{ e.event_time.strftime('%Y-%m-%d %H:%M') if e.event_time else '-' }}</td>
+            <td class="py-4 px-6">
+              <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium {% if e.action == 'checkin' %}bg-emerald-500/20 text-emerald-400{% else %}bg-sky-500/20 text-sky-400{% endif %}">{{ e.action }}</span>
+            </td>
+            <td class="py-4 px-6 text-slate-200">{{ e.tool_name or e.tool_id_number }}</td>
+            <td class="py-4 px-6 text-slate-300">{{ e.username }}</td>
+            <td class="py-4 px-6 text-slate-400 hidden md:table-cell">{{ e.job_id or '—' }}</td>
+            <td class="py-4 px-6 text-slate-400 hidden md:table-cell">{{ e.condition or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-16 text-center text-slate-500">
+      <p class="text-4xl mb-2">🔧</p>
+      <p>No recent check-in/check-out activity</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORAGE_KEY = 'atems_dashboard_card_order';
+  const container = document.getElementById('dashboard-cards');
+  if (!container) return;
+
+  function getOrder() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const ids = JSON.parse(saved);
+        return ids;
+      }
+    } catch (e) {}
+    return ['total-tools', 'in-stock', 'checked-out', 'cal-overdue', 'overdue-returns'];
+  }
+
+  function saveOrder() {
+    const cards = Array.from(container.querySelectorAll('[data-card-id]'));
+    const order = cards.map(c => c.getAttribute('data-card-id'));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(order));
+  }
+
+  function applyOrder() {
+    const order = getOrder();
+    const cards = Array.from(container.querySelectorAll('[data-card-id]'));
+    const byId = Object.fromEntries(cards.map(c => [c.getAttribute('data-card-id'), c]));
+    order.forEach(id => {
+      if (byId[id]) container.appendChild(byId[id]);
+    });
+  }
+
+  applyOrder();
+
+  let dragged = null;
+  container.addEventListener('dragstart', function(e) {
+    if (e.target.closest('[data-card-id]')) {
+      dragged = e.target.closest('[data-card-id]');
+      dragged.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', dragged.innerHTML);
+    }
+  });
+  container.addEventListener('dragend', function(e) {
+    if (dragged) {
+      dragged.style.opacity = '1';
+      dragged = null;
+    }
+  });
+  container.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const card = e.target.closest('[data-card-id]');
+    if (card && card !== dragged) {
+      const rect = card.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      if (e.clientX < mid) container.insertBefore(dragged, card);
+      else container.insertBefore(dragged, card.nextSibling);
+    }
+  });
+  container.addEventListener('drop', function(e) {
+    e.preventDefault();
+    saveOrder();
+  });
+
+  container.querySelectorAll('[data-card-id]').forEach(card => {
+    card.setAttribute('draggable', 'true');
+  });
+})();
+</script>
+{% endblock %}

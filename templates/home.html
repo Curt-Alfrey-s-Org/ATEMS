@@ -1,0 +1,103 @@
+<!-- home.html -->
+
+{% extends "common.html" %}
+
+{% block content %}
+
+
+    
+<div class="parent-div">
+    
+    <div>
+        <img src="{{ url_for('static', filename='images/fluke.jpg') }}" alt="fluke" width="400" height="240" style="padding: 25px; margin: 25px;">
+        <img src="{{ url_for('static', filename='images/Beamex.jpg') }}" alt="Beamex" width="400" height="240" style="padding: 25px; margin: 25px;">
+        <img src="{{ url_for('static', filename='images/calibrated_tools.jpg') }}" alt="calibrated_tools" width="400" height="240" style="padding: 25px; margin: 25px;">
+        <img src="{{ url_for('static', filename='images/calibration_lab_equip.jpg') }}" alt="calibration_lab_equip" width="400" height="240" style="padding: 25px; margin: 25px;">
+    </div>
+    
+
+    <div class="info-box">
+        <h3>Professional Inventory Control Software for Technicians</h3>
+        <hr style="border-top: 2px double;">
+
+        <ul class="info-list">
+            <li class="info-item">Automated Accountability:
+            <hr style="border-top: 2px double;">
+                <ul>
+                    <li>Streamlined email reminders are seamlessly integrated to prompt customers for timely check-ins, ensuring optimal availability for concurrent tasks.</li>
+                    <li>Automated report generation and email notifications preemptively address tool and equipment calibration, averting potential delays in job execution.</li>
+                </ul>
+            </li>
+            
+    
+    <div style="height: 25px;"></div>
+
+            <li class="info-item">Comprehensive Tracking:
+            <hr style="border-top: 2px double;">
+                <ul>
+                    <li>Utilize active/passive RFID barcode labels with scan-gun or tablet functionality to monitor:</li>
+                    <li>Personnel responsible for checking in/out items</li>
+                    <li>Timestamps of item check-in/out activities</li>
+                    <li>Locations of item transactions</li>
+                    <li>Job associations for utilized items</li>
+                    <li>Duration of item checkouts</li>
+                    <li>Condition and calibration status at check in/out</li>
+                </ul>
+            </li>
+
+    
+    <div style="height: 25px;"></div>
+
+            <li class="info-item">Efficient Equipment Management:
+            <hr style="border-top: 2px double;">
+
+                <ul>
+                    <li>Record all transactions for streamlined auditing processes.</li>
+                    <li>Document serviceability data for both calibrated and non-calibrated electronic test equipment.</li>
+                    <li>Track purchase and calibration costs for comprehensive financial oversight.</li>
+                    <li>Maintain records of calibration procedures, standards, and certificates used by technicians/vendors to ensure compliance with NIST standards.</li>
+                </ul>
+            </li>
+        
+    
+    <div style="height: 25px;"></div>
+
+            <li class="info-item">Effortless Inventory Management:
+            <hr style="border-top: 2px double;">
+
+                <ul>
+                    <li>Centralize control of inventory through a single, user-friendly program.</li>
+                    <li>Manage customer and supervisor information seamlessly for enhanced organizational efficiency.</li>
+                </ul>
+            </li>
+
+    
+    <div style="height: 25px;"></div>
+
+            <li class="info-item">Simplified Reporting:
+            <hr style="border-top: 2px double;">
+
+                <ul>
+                    <li>Easily generate, filter, and sort reports according to specific needs.</li>
+                    <li>Access pre-generated or customize reports for tailored insights.</li>
+                    <li>Export reports to PDF or Excel formats for convenient sharing and archival.</li>
+                    <li>Choose between print or email options for flexible dissemination.</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+        
+        <div> 
+            <img src="{{ url_for('static', filename='images/tool-crib2.jpg') }}" alt="tool-crib2" width="400" height="240" style="padding: 25px; margin: 25px;">
+            <img src="{{ url_for('static', filename='images/Dewalt-Workshop.jpg') }}" alt="Dewalt-Workshop" width="400" height="240" style="padding: 25px; margin: 25px;">
+            <img src="{{ url_for('static', filename='images/tool_crib.jpg') }}" alt="tool_crib" width="400" height="240" style="padding: 25px; margin: 25px;">
+            <img src="{{ url_for('static', filename='images/seabox.jpg') }}" alt="seabox" width="400" height="240" style="padding: 25px; margin: 25px;">
+        </div>
+        
+</div>    
+
+
+    <div style="height: 50px;"></div>
+
+{% endblock %}
+</html>
