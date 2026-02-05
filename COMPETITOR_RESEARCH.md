@@ -87,7 +87,7 @@ This document summarizes competing software and feature ideas to improve ATEMS.
 - **Multi-language** – If targeting global sites.
 - **Cloud vs on-prem** – Choice of hosting (ATEMS can stay self-hosted; document “ATEMS in cloud” option).
 
-**ATEMS today:** Web UI, roles (admin/user/guest), tooltips.  
+**ATEMS today:** Web UI, roles (admin/user), tooltips.  
 **Improve:** Optional “kiosk” layout for tablet; one-click “return last checked-out tool”; clearer crib operator workflow.
 
 ### Integrations & data
@@ -130,7 +130,7 @@ This document summarizes competing software and feature ideas to improve ATEMS.
 
 - Correct product name: **ATEMS — Automated Tool and Equipment Management System**
 - Check-in/check-out with badge, tool, job, and condition
-- User roles (admin, user, guest) and demo-friendly setup
+- User roles (admin, user) and demo-friendly setup
 - Calibration due tracking and overdue indication
 - Category/industry breakdown and usage trends
 - Dashboard with draggable widgets and settings presets

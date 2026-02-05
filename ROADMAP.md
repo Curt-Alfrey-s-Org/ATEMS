@@ -306,7 +306,7 @@ Based on analysis of the Rankings Bot codebase, these features should be added t
 1. ~~Create **`scripts/seed_tools.py`** with tools from top 10 industries.~~ ✅ Done (50,000 tools)
 2. ~~Add **pytest tests** for check-in/check-out using seeded data.~~ ✅ Done (7 tests)
 3. ~~Add **API routes** for tools, stats, checkinout (JSON) for future SPA.~~ ✅ Done (`/api/health`, `/api/stats`, `/api/tools`, `/api/checkinout`)
-4. ~~Professional splash screen and demo site setup~~ ✅ Done (splash.html, 50K tools, guest accounts)
+4. ~~Professional splash screen and demo site setup~~ ✅ Done (splash.html, 50K tools, demo accounts)
 5. **Deployment & Fixes** — Deploy to website; debug; fix HTTP and API (see §11)
 6. **Start Phase 7** — Plan React frontend migration (copy Rankings-Bot `frontend/` structure)
 7. **Port Draggable Dashboard** — Implement widget-based dashboard with localStorage persistence

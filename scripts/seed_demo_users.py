@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Seed demo users for https://atems.alfaquantumdynamics.com
-Creates admin, user, and guest accounts with appropriate permissions.
+Creates admin and user accounts with appropriate permissions.
 """
 import sys
 import os
@@ -40,22 +40,7 @@ DEMO_USERS = [
         'supervisor_email': 'admin@alfaquantumdynamics.com',
         'supervisor_phone': '5550001000',
     },
-    {
-        'username': 'guest',
-        'password': 'guest123',
-        'first_name': 'Guest',
-        'last_name': 'Demo',
-        'email': 'guest@alfaquantumdynamics.com',
-        'badge_id': 'GUEST001',
-        'phone': '5550003000',
-        'department': 'ATEMS',
-        'role': 'guest',
-        'supervisor_username': 'admin',
-        'supervisor_email': 'admin@alfaquantumdynamics.com',
-        'supervisor_phone': '5550001000',
-    },
 ]
-
 
 def main():
     app = create_app()
@@ -81,7 +66,6 @@ def main():
             print(f"\n✓ Created {created} demo users")
         else:
             print("\n✓ All demo users already exist")
-
 
 if __name__ == "__main__":
     main()

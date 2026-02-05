@@ -320,7 +320,6 @@ The following accounts are available for demo purposes:
 |----------|------------|-------|--------------------------------------|
 | admin    | admin123   | Admin | Full access including Flask-Admin    |
 | user     | user123    | User  | Check in/out, view tools, reports    |
-| guest    | guest123   | Guest | View-only, cannot access admin panel |
 
 **Important:** Change these passwords in production!
 

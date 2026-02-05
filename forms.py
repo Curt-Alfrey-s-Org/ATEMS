@@ -13,7 +13,11 @@ def validate_tool_id(form, field):
         raise ValidationError('Tool ID may only contain letters, numbers, and hyphens.')
 
 def validate_badge_id(form, field):
-    if not field.data.isalnum():  # Example: Badge ID must be alphanumeric
+    """Badge ID must be alphanumeric. Skip if empty (DataRequired handles that)."""
+    val = field.data
+    if val is None or (isinstance(val, str) and not val.strip()):
+        return
+    if not str(val).strip().replace(" ", "").isalnum():
         raise ValidationError('Badge ID must be alphanumeric.')
 
 class CheckInForm(FlaskForm):

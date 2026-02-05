@@ -10,7 +10,6 @@ This document summarizes the complete demo site setup for ATEMS.
 ### 1. User Roles & Authentication
 - **Admin Account**: `admin` / `admin123` - Full system access including Flask-Admin panel
 - **User Account**: `user` / `user123` - Standard user with check-in/out and reporting access
-- **Guest Account**: `guest` / `guest123` - View-only demo access, can explore all features but cannot access admin panel
 
 ### 2. Massive Demo Database
 - **50,000 Tools** from 10 major US industries:
@@ -49,9 +48,9 @@ This document summarizes the complete demo site setup for ATEMS.
 - Hover over `?` icons to see contextual help
 - Implemented via `/static/js/tooltips.js`
 
-### 6. Guest Permissions
-- Guests can view all features (dashboard, tools, checkout history, reports)
-- Guests **cannot** access Flask-Admin panel (`/admin`)
+### 6. User Permissions
+- Users can view and use all features (dashboard, tools, checkout history, reports)
+- Only **admin** can access Flask-Admin panel (`/admin`)
 - Admin panel restricted to users with `role='admin'`
 - Proper redirects and error messages for unauthorized access
 
@@ -78,7 +77,7 @@ This document summarizes the complete demo site setup for ATEMS.
 
 ### Users Table
 - `id`, `first_name`, `last_name`, `username`, `password_hash`, `email`
-- `badge_id`, `phone`, `department`, `role` (admin/user/guest)
+- `badge_id`, `phone`, `department`, `role` (admin/user)
 - `supervisor_username`, `supervisor_email`, `supervisor_phone`
 - `manager_username`, `manager_email`, `manager_phone`
 
@@ -139,10 +138,10 @@ Follow the complete guide in `NGINX_DEPLOYMENT.md` for:
 
 ## 🎯 Demo Workflow for Visitors
 
-### As Guest User:
+### As User:
 1. Visit https://atems.alfaquantumdynamics.com
 2. View professional splash screen
-3. Click "Try Demo" or sign in with `guest` / `guest123`
+3. Click "Try Demo" or sign in with `user` / `user123`
 4. Explore dashboard with 50K tools and live statistics
 5. Browse tools, view checkout history, generate reports
 6. Hover over `?` icons for contextual help
@@ -171,7 +170,6 @@ All located in `/scripts/`:
 
 | Script | Purpose |
 |--------|---------|
-| `seed_demo_users.py` | Create admin/user/guest accounts |
 | `seed_50k_tools.py` | Populate 50,000 tools from 10 industries |
 | `seed_fake_users_and_history.py` | Generate 200 users + 4,500 history records |
 | `scrape_tool_crib_images.py` | Download professional tool crib images |

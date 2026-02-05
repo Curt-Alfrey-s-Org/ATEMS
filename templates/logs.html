@@ -11,6 +11,7 @@
         <label class="block text-sm font-medium text-slate-300 mb-2">View Preset</label>
         <select id="viewPreset" class="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="all">All Logs</option>
+          <option value="perf">Performance (timestamps)</option>
           <option value="errors">Errors Only</option>
           <option value="warnings">Warnings</option>
           <option value="info">Info</option>
@@ -95,6 +96,7 @@ const LOG_COLORS = {
 // View presets
 const VIEW_PRESETS = {
   'all': {},
+  'perf': { search: '[PERF]' },
   'errors': { level: 'ERROR' },
   'warnings': { level: 'WARNING' },
   'info': { level: 'INFO' },

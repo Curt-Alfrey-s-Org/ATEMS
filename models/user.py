@@ -26,7 +26,7 @@ class User(db.Model, UserMixin):
     manager_username = db.Column(db.String(64), index=True, unique=False,)
     manager_email = db.Column(db.String(80), index=True, unique=False,)
     manager_phone = db.Column(db.String(10), index=True, unique=False,)
-    role = db.Column(db.String(20), nullable=False, default='user')  # admin, user, guest
+    role = db.Column(db.String(20), nullable=False, default='user')  # admin, user
 
 
     def set_password(self, password):
@@ -44,10 +44,6 @@ class User(db.Model, UserMixin):
         """Check if user has admin role."""
         return self.role == 'admin'
     
-    def is_guest(self):
-        """Check if user has guest role."""
-        return self.role == 'guest'
-    
     def can_access_admin(self):
         """Check if user can access Flask-Admin panel."""
         return self.role == 'admin'
@@ -63,12 +59,12 @@ class UserView(ModelView):
     column_default_sort = ('first_name','last_name', 'username', True)
     column_sortable_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_labels = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='Role', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
-    column_descriptions = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='User Role (admin/user/guest)', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
+    column_descriptions = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='User Role (admin/user)', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
     column_details_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_export_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_choices = dict(
         department=[('ATEMS', 'ATEMS'), ('Engineering', 'Engineering'), ('Manufacturing', 'Manufacturing'), ('Quality', 'Quality'), ('Supply Chain', 'Supply Chain'), ('Test', 'Test')],
-        role=[('admin', 'Admin'), ('user', 'User'), ('guest', 'Guest')]
+        role=[('admin', 'Admin'), ('user', 'User')]
     )
     
     def is_accessible(self):

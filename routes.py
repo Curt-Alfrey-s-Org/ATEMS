@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
 from forms import CheckInOutForm
@@ -10,7 +11,6 @@ import logging
 
 bp = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
-
 
 @bp.app_context_processor
 def inject_datetime():
@@ -46,93 +46,131 @@ def serve_spa(path=None):
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Dashboard with stat cards, category breakdown, usage trend, and recent activity."""
+    """Dashboard with stat cards, category breakdown, usage trend, and recent activity.
+    Independent query groups run in parallel when ATEMS_DASHBOARD_PARALLEL=1 (default on).
+    """
+    from flask import current_app
     from utils.calibration import is_calibration_overdue
     from sqlalchemy import func
     from datetime import timedelta, timezone
 
-    _now = datetime.now(timezone.utc).replace(tzinfo=None)
-    total = Tools.query.count()
-    checked_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).count()
-    in_stock = total - checked_out
-    cal_tools = Tools.query.filter(
-        Tools.tool_calibration_due != "N/A",
-        Tools.tool_calibration_due.isnot(None),
-    ).all()
-    calibration_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
-    recent = CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(10).all()
+    try:
+        _now = datetime.now(timezone.utc).replace(tzinfo=None)
+        seven_days_ago = _now - timedelta(days=7)
+        today_str = _now.strftime('%Y-%m-%d')
+        d30 = (_now + timedelta(days=30)).strftime('%Y-%m-%d')
+        d60 = (_now + timedelta(days=60)).strftime('%Y-%m-%d')
 
-    # Category breakdown (tools per category)
-    category_breakdown = db.session.query(
-        Tools.category, func.count(Tools.id).label('count')
-    ).filter(Tools.category.isnot(None), Tools.category != '').group_by(Tools.category).order_by(func.count(Tools.id).desc()).all()
-    category_breakdown = [{'name': c[0], 'count': c[1]} for c in category_breakdown]
+        use_parallel = os.environ.get("ATEMS_DASHBOARD_PARALLEL", "1").strip().lower() in ("1", "true", "yes")
 
-    # Usage trend: checkouts per day for last 7 days
-    seven_days_ago = _now - timedelta(days=7)
-    usage_rows = db.session.query(
-        func.date(CheckoutHistory.event_time).label('day'),
-        func.count(CheckoutHistory.id).label('count')
-    ).filter(
-        CheckoutHistory.event_time >= seven_days_ago,
-        CheckoutHistory.action == 'checkout'
-    ).group_by(func.date(CheckoutHistory.event_time)).order_by('day').all()
-    usage_trend = [{'day': str(r[0]), 'count': r[1]} for r in usage_rows]
+        if use_parallel:
+            app = current_app._get_current_object()
 
-    # Calibration summary: overdue, due in 30/60/90 days (string compare YYYY-MM-DD)
-    today = _now
-    d30 = (today + timedelta(days=30)).strftime('%Y-%m-%d')
-    d60 = (today + timedelta(days=60)).strftime('%Y-%m-%d')
-    today_str = today.strftime('%Y-%m-%d')
-    cal_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
-    cal_due_30 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and today_str <= t.tool_calibration_due <= d30)
-    cal_due_60 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and d30 < t.tool_calibration_due <= d60)
-    cal_due_90 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and t.tool_calibration_due > d60)
-    calibration_summary = [
-        {'label': 'Overdue', 'count': cal_overdue, 'color': 'amber'},
-        {'label': 'Due in 30 days', 'count': cal_due_30, 'color': 'yellow'},
-        {'label': 'Due in 60 days', 'count': cal_due_60, 'color': 'blue'},
-        {'label': 'Due in 90+ days', 'count': cal_due_90, 'color': 'emerald'},
-    ]
+            def block_counts():
+                total = Tools.query.count()
+                checked_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).count()
+                return (total, checked_out)
 
-    # Overdue returns: tools still checked out with return_by < now
-    tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
-    overdue_returns = []
-    for t in tools_out:
-        last_checkout = (
-            CheckoutHistory.query.filter_by(
-                tool_id_number=t.tool_id_number, action="checkout"
+            def block_cal_tools():
+                return Tools.query.filter(
+                    Tools.tool_calibration_due != "N/A",
+                    Tools.tool_calibration_due.isnot(None),
+                ).all()
+
+            def block_recent():
+                return CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(10).all()
+
+            def block_category_breakdown():
+                rows = db.session.query(
+                    Tools.category, func.count(Tools.id).label('count')
+                ).filter(Tools.category.isnot(None), Tools.category != '').group_by(Tools.category).order_by(func.count(Tools.id).desc()).all()
+                return [{'name': c[0], 'count': c[1]} for c in rows]
+
+            def block_usage_trend():
+                rows = db.session.query(
+                    func.date(CheckoutHistory.event_time).label('day'),
+                    func.count(CheckoutHistory.id).label('count')
+                ).filter(
+                    CheckoutHistory.event_time >= seven_days_ago,
+                    CheckoutHistory.action == 'checkout'
+                ).group_by(func.date(CheckoutHistory.event_time)).order_by('day').all()
+                return [{'day': str(r[0]), 'count': r[1]} for r in rows]
+
+            def block_overdue_returns():
+                from utils.performance import get_overdue_returns_bulk
+                tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
+                return get_overdue_returns_bulk(tools_out, _now, Tools, CheckoutHistory)
+
+            from utils.performance import run_in_parallel
+            counts, cal_tools, recent, category_breakdown, usage_trend, overdue_returns = run_in_parallel(
+                app,
+                [block_counts, block_cal_tools, block_recent, block_category_breakdown, block_usage_trend, block_overdue_returns],
             )
-            .order_by(CheckoutHistory.event_time.desc())
-            .first()
+            total, checked_out = counts
+            in_stock = total - checked_out
+        else:
+            total = Tools.query.count()
+            checked_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).count()
+            in_stock = total - checked_out
+            cal_tools = Tools.query.filter(
+                Tools.tool_calibration_due != "N/A",
+                Tools.tool_calibration_due.isnot(None),
+            ).all()
+            recent = CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(10).all()
+            category_breakdown = db.session.query(
+                Tools.category, func.count(Tools.id).label('count')
+            ).filter(Tools.category.isnot(None), Tools.category != '').group_by(Tools.category).order_by(func.count(Tools.id).desc()).all()
+            category_breakdown = [{'name': c[0], 'count': c[1]} for c in category_breakdown]
+            usage_rows = db.session.query(
+                func.date(CheckoutHistory.event_time).label('day'),
+                func.count(CheckoutHistory.id).label('count')
+            ).filter(
+                CheckoutHistory.event_time >= seven_days_ago,
+                CheckoutHistory.action == 'checkout'
+            ).group_by(func.date(CheckoutHistory.event_time)).order_by('day').all()
+            usage_trend = [{'day': str(r[0]), 'count': r[1]} for r in usage_rows]
+            tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
+            from utils.performance import get_overdue_returns_bulk
+            overdue_returns = get_overdue_returns_bulk(tools_out, _now, Tools, CheckoutHistory)
+
+        calibration_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
+        cal_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
+        cal_due_30 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and today_str <= t.tool_calibration_due <= d30)
+        cal_due_60 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and d30 < t.tool_calibration_due <= d60)
+        cal_due_90 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and t.tool_calibration_due > d60)
+        calibration_summary = [
+            {'label': 'Overdue', 'count': cal_overdue, 'color': 'amber'},
+            {'label': 'Due in 30 days', 'count': cal_due_30, 'color': 'yellow'},
+            {'label': 'Due in 60 days', 'count': cal_due_60, 'color': 'blue'},
+            {'label': 'Due in 90+ days', 'count': cal_due_90, 'color': 'emerald'},
+        ]
+        categories = [c['name'] for c in category_breakdown]
+        max_usage = max((u['count'] for u in usage_trend), default=1)
+
+        return render_template(
+            "dashboard.html",
+            total_tools=total,
+            checked_out=checked_out,
+            in_stock=in_stock,
+            calibration_overdue=calibration_overdue,
+            recent_events=recent,
+            category_breakdown=category_breakdown,
+            usage_trend=usage_trend,
+            calibration_summary=calibration_summary,
+            categories=categories,
+            max_usage=max_usage,
+            overdue_returns=overdue_returns,
+            overdue_returns_count=len(overdue_returns),
         )
-        if last_checkout and last_checkout.return_by and last_checkout.return_by < _now:
-            overdue_returns.append({
-                "tool_id_number": t.tool_id_number,
-                "tool_name": t.tool_name or "",
-                "username": t.checked_out_by,
-                "return_by": last_checkout.return_by,
-            })
-
-    # Categories list for filter
-    categories = [c['name'] for c in category_breakdown]
-    max_usage = max((u['count'] for u in usage_trend), default=1)
-
-    return render_template(
-        "dashboard.html",
-        total_tools=total,
-        checked_out=checked_out,
-        in_stock=in_stock,
-        calibration_overdue=calibration_overdue,
-        recent_events=recent,
-        category_breakdown=category_breakdown,
-        usage_trend=usage_trend,
-        calibration_summary=calibration_summary,
-        categories=categories,
-        max_usage=max_usage,
-        overdue_returns=overdue_returns,
-        overdue_returns_count=len(overdue_returns),
-    )
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.exception("Dashboard database error")
+        flash("Unable to load dashboard. Please try again.", "error")
+        return redirect(url_for("main.index"))
+    except Exception as e:
+        logger.exception("Dashboard error: %s", e)
+        flash("An error occurred loading the dashboard.", "error")
+        return redirect(url_for("main.index"))
 
 
 @bp.route('/login', methods=['GET', 'POST'])
@@ -237,10 +275,14 @@ def checkinout():
             return jsonify(resp)
         except SQLAlchemyError as e:
             db.session.rollback()
-            logger.error(f"Database error: {str(e)}")
-            return jsonify(status="error", message="A database error occurred. Please try again.")
+            logger.exception("Checkinout database error: %s", e)
+            return jsonify(status="error", message="A database error occurred. Please try again."), 500
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("Checkinout error: %s", e)
+            return jsonify(status="error", message="An unexpected error occurred. Please try again."), 500
     elif request.method == 'POST':
-        logger.warning(f"Form validation failed: {form.errors}")
+        logger.debug("Form validation failed: %s", form.errors)
         errs = form.errors
         first = next((v[0] for v in errs.values() if v), "Validation failed")
         return jsonify(status="error", message=first, errors=errs), 400
@@ -393,7 +435,10 @@ def api_calibration_reminders_send():
 def api_reports_usage():
     """Tool usage report: checkout history with optional date range and limit."""
     from sqlalchemy import and_
-    limit = min(int(request.args.get('limit', 500)), 2000)
+    try:
+        limit = min(max(1, int(request.args.get('limit', 500))), 2000)
+    except (TypeError, ValueError):
+        limit = 500
     date_from = request.args.get('date_from')  # YYYY-MM-DD
     date_to = request.args.get('date_to')
     username = request.args.get('username', '').strip()
@@ -419,20 +464,25 @@ def api_reports_usage():
         q = q.filter(CheckoutHistory.tool_id_number.ilike(f'%{tool_id}%'))
     if action:
         q = q.filter(CheckoutHistory.action == action)
-    events = q.limit(limit).all()
-    return jsonify(events=[
-        {
-            'event_time': e.event_time.isoformat() if e.event_time else None,
-            'action': e.action,
-            'tool_id_number': e.tool_id_number,
-            'tool_name': e.tool_name or '',
-            'username': e.username,
-            'job_id': e.job_id or '',
-            'condition': e.condition or '',
-            'return_by': e.return_by.isoformat() if getattr(e, 'return_by', None) and e.return_by else None,
-        }
-        for e in events
-    ], count=len(events))
+    try:
+        events = q.limit(limit).all()
+        return jsonify(events=[
+            {
+                'event_time': e.event_time.isoformat() if e.event_time else None,
+                'action': e.action,
+                'tool_id_number': e.tool_id_number,
+                'tool_name': e.tool_name or '',
+                'username': e.username,
+                'job_id': e.job_id or '',
+                'condition': e.condition or '',
+                'return_by': e.return_by.isoformat() if getattr(e, 'return_by', None) and e.return_by else None,
+            }
+            for e in events
+        ], count=len(events))
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.exception("api_reports_usage: %s", e)
+        return jsonify(error="Database error", events=[], count=0), 500
 
 
 @bp.route('/api/reports/calibration')
@@ -465,26 +515,21 @@ def api_reports_calibration():
 @bp.route('/api/reports/overdue-returns')
 @login_required
 def api_reports_overdue_returns():
-    """Overdue returns: tools currently checked out past their return-by date."""
+    """Overdue returns: tools currently checked out past their return-by date (bulk query)."""
     from datetime import timezone
+    from utils.performance import get_overdue_returns_bulk
     _now = datetime.now(timezone.utc).replace(tzinfo=None)
     tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
-    overdue = []
-    for t in tools_out:
-        last_checkout = (
-            CheckoutHistory.query.filter_by(
-                tool_id_number=t.tool_id_number, action="checkout"
-            )
-            .order_by(CheckoutHistory.event_time.desc())
-            .first()
-        )
-        if last_checkout and last_checkout.return_by and last_checkout.return_by < _now:
-            overdue.append({
-                "tool_id_number": t.tool_id_number,
-                "tool_name": t.tool_name or "",
-                "username": t.checked_out_by,
-                "return_by": last_checkout.return_by.isoformat() if last_checkout.return_by else None,
-            })
+    raw = get_overdue_returns_bulk(tools_out, _now, Tools, CheckoutHistory)
+    overdue = [
+        {
+            "tool_id_number": r["tool_id_number"],
+            "tool_name": r["tool_name"],
+            "username": r["username"],
+            "return_by": r["return_by"].isoformat() if r["return_by"] else None,
+        }
+        for r in raw
+    ]
     return jsonify(overdue=overdue, count=len(overdue))
 
 
@@ -530,8 +575,16 @@ def api_reports_export():
         fmt = 'csv'
 
     if report_type == 'usage':
-        limit = min(int(request.args.get('limit', 2000)), 5000)
-        events = CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(limit).all()
+        try:
+            limit = min(max(1, int(request.args.get('limit', 2000))), 5000)
+        except (TypeError, ValueError):
+            limit = 2000
+        try:
+            events = CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(limit).all()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception("api_reports_export usage: %s", e)
+            return jsonify(error="Database error"), 500
         headers = ['Event Time', 'Action', 'Tool ID', 'Tool Name', 'User', 'Job ID', 'Condition', 'Return By']
         rows = [
             [
@@ -546,55 +599,58 @@ def api_reports_export():
             ]
             for e in events
         ]
-        if fmt == 'pdf':
-            from utils.report_export import pdf_table
-            data = pdf_table(headers, rows, title="ATEMS Tool Usage Report")
-            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.pdf'})
-        if fmt == 'xlsx':
-            from utils.report_export import xlsx_table
-            data = xlsx_table(headers, rows, sheet_name="Usage")
-            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.xlsx'})
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(headers)
-        for r in rows:
-            w.writerow(r)
-        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.csv'})
+        try:
+            if fmt == 'pdf':
+                from utils.report_export import pdf_table
+                data = pdf_table(headers, rows, title="ATEMS Tool Usage Report")
+                return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.pdf'})
+            if fmt == 'xlsx':
+                from utils.report_export import xlsx_table
+                data = xlsx_table(headers, rows, sheet_name="Usage")
+                return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.xlsx'})
+            buf = io.StringIO()
+            w = csv.writer(buf)
+            w.writerow(headers)
+            for r in rows:
+                w.writerow(r)
+            return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_usage_report.csv'})
+        except Exception as ex:
+            logger.exception("api_reports_export usage %s: %s", fmt, ex)
+            return jsonify(error="Export failed. Please try again."), 500
     elif report_type == 'overdue-returns':
         from datetime import timezone
+        from utils.performance import get_overdue_returns_bulk
         _now = datetime.now(timezone.utc).replace(tzinfo=None)
         tools_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).all()
+        raw = get_overdue_returns_bulk(tools_out, _now, Tools, CheckoutHistory)
         headers = ['Tool ID', 'Tool Name', 'Checked out by', 'Return by']
-        rows = []
-        for t in tools_out:
-            last_checkout = (
-                CheckoutHistory.query.filter_by(
-                    tool_id_number=t.tool_id_number, action="checkout"
-                )
-                .order_by(CheckoutHistory.event_time.desc())
-                .first()
-            )
-            if last_checkout and last_checkout.return_by and last_checkout.return_by < _now:
-                rows.append([
-                    t.tool_id_number or '',
-                    t.tool_name or '',
-                    t.checked_out_by or '',
-                    last_checkout.return_by.strftime('%Y-%m-%d') if last_checkout.return_by else '',
-                ])
-        if fmt == 'pdf':
-            from utils.report_export import pdf_table
-            data = pdf_table(headers, rows, title="ATEMS Overdue Returns")
-            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.pdf'})
-        if fmt == 'xlsx':
-            from utils.report_export import xlsx_table
-            data = xlsx_table(headers, rows, sheet_name="Overdue Returns")
-            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.xlsx'})
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(headers)
-        for r in rows:
-            w.writerow(r)
-        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.csv'})
+        rows = [
+            [
+                r["tool_id_number"] or '',
+                r["tool_name"] or '',
+                r["username"] or '',
+                r["return_by"].strftime('%Y-%m-%d') if r["return_by"] else '',
+            ]
+            for r in raw
+        ]
+        try:
+            if fmt == 'pdf':
+                from utils.report_export import pdf_table
+                data = pdf_table(headers, rows, title="ATEMS Overdue Returns")
+                return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.pdf'})
+            if fmt == 'xlsx':
+                from utils.report_export import xlsx_table
+                data = xlsx_table(headers, rows, sheet_name="Overdue Returns")
+                return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.xlsx'})
+            buf = io.StringIO()
+            w = csv.writer(buf)
+            w.writerow(headers)
+            for r in rows:
+                w.writerow(r)
+            return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_overdue_returns.csv'})
+        except Exception as ex:
+            logger.exception("api_reports_export overdue-returns %s: %s", fmt, ex)
+            return jsonify(error="Export failed. Please try again."), 500
     elif report_type == 'calibration':
         from utils.calibration import is_calibration_overdue
         cal_tools = Tools.query.filter(
@@ -614,20 +670,24 @@ def api_reports_export():
             ]
             for t in cal_tools
         ]
-        if fmt == 'pdf':
-            from utils.report_export import pdf_table
-            data = pdf_table(headers, rows, title="ATEMS Calibration Report")
-            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.pdf'})
-        if fmt == 'xlsx':
-            from utils.report_export import xlsx_table
-            data = xlsx_table(headers, rows, sheet_name="Calibration")
-            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.xlsx'})
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(headers)
-        for r in rows:
-            w.writerow(r)
-        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.csv'})
+        try:
+            if fmt == 'pdf':
+                from utils.report_export import pdf_table
+                data = pdf_table(headers, rows, title="ATEMS Calibration Report")
+                return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.pdf'})
+            if fmt == 'xlsx':
+                from utils.report_export import xlsx_table
+                data = xlsx_table(headers, rows, sheet_name="Calibration")
+                return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.xlsx'})
+            buf = io.StringIO()
+            w = csv.writer(buf)
+            w.writerow(headers)
+            for r in rows:
+                w.writerow(r)
+            return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_calibration_report.csv'})
+        except Exception as ex:
+            logger.exception("api_reports_export calibration %s: %s", fmt, ex)
+            return jsonify(error="Export failed. Please try again."), 500
     elif report_type == 'inventory':
         tools = Tools.query.order_by(Tools.category, Tools.tool_id_number).all()
         headers = ['Tool ID', 'Tool Name', 'Location', 'Category', 'Status', 'Checked Out By', 'Calibration Due']
@@ -643,20 +703,24 @@ def api_reports_export():
             ]
             for t in tools
         ]
-        if fmt == 'pdf':
-            from utils.report_export import pdf_table
-            data = pdf_table(headers, rows, title="ATEMS Inventory Report")
-            return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.pdf'})
-        if fmt == 'xlsx':
-            from utils.report_export import xlsx_table
-            data = xlsx_table(headers, rows, sheet_name="Inventory")
-            return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.xlsx'})
-        buf = io.StringIO()
-        w = csv.writer(buf)
-        w.writerow(headers)
-        for r in rows:
-            w.writerow(r)
-        return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.csv'})
+        try:
+            if fmt == 'pdf':
+                from utils.report_export import pdf_table
+                data = pdf_table(headers, rows, title="ATEMS Inventory Report")
+                return Response(data, mimetype='application/pdf', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.pdf'})
+            if fmt == 'xlsx':
+                from utils.report_export import xlsx_table
+                data = xlsx_table(headers, rows, sheet_name="Inventory")
+                return Response(data, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.xlsx'})
+            buf = io.StringIO()
+            w = csv.writer(buf)
+            w.writerow(headers)
+            for r in rows:
+                w.writerow(r)
+            return Response(buf.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=atems_inventory_report.csv'})
+        except Exception as ex:
+            logger.exception("api_reports_export inventory %s: %s", fmt, ex)
+            return jsonify(error="Export failed. Please try again."), 500
     return jsonify(error='Invalid report type'), 400
 
 
@@ -667,8 +731,11 @@ def api_logs():
     try:
         import os
         
-        # Get parameters
-        limit = int(request.args.get('limit', 250))
+        # Get parameters (validate to avoid ValueError)
+        try:
+            limit = min(max(1, int(request.args.get('limit', 250))), 1000)
+        except (TypeError, ValueError):
+            limit = 250
         level = request.args.get('level', '').upper()
         search = request.args.get('search', '').lower()
         
@@ -703,7 +770,8 @@ def api_logs():
                             'level': log_level,
                             'message': message
                         })
-                except:
+                except Exception as parse_err:
+                    logger.debug("Log line parse failed: %s", parse_err)
                     # If parsing fails, include raw line
                     logs.append({
                         'timestamp': '',
@@ -730,71 +798,89 @@ def api_stats():
     """Inventory stats for dashboard (tools out, overdue, calibration due)."""
     from utils.calibration import is_calibration_overdue
 
-    total = Tools.query.count()
-    checked_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).count()
-    in_stock = total - checked_out
-    cal_tools = Tools.query.filter(
-        Tools.tool_calibration_due != "N/A",
-        Tools.tool_calibration_due.isnot(None),
-    ).all()
-    calibration_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
-    return jsonify(
-        total_tools=total,
-        checked_out=checked_out,
-        in_stock=in_stock,
-        calibrated_tools=len(cal_tools),
-        calibration_overdue=calibration_overdue,
-    )
+    try:
+        total = Tools.query.count()
+        checked_out = Tools.query.filter(Tools.checked_out_by.isnot(None)).count()
+        in_stock = total - checked_out
+        cal_tools = Tools.query.filter(
+            Tools.tool_calibration_due != "N/A",
+            Tools.tool_calibration_due.isnot(None),
+        ).all()
+        calibration_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
+        return jsonify(
+            total_tools=total,
+            checked_out=checked_out,
+            in_stock=in_stock,
+            calibrated_tools=len(cal_tools),
+            calibration_overdue=calibration_overdue,
+        )
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.exception("api_stats: %s", e)
+        return jsonify(error="Database error"), 500
 
 
 @bp.route('/api/history')
 @login_required
 def api_history():
     """Recent check-in/check-out events for audit trail."""
-    limit = min(int(request.args.get("limit", 20)), 100)
-    events = (
-        CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(limit).all()
-    )
-    return jsonify(events=[
-        {
-            "event_time": e.event_time.isoformat() if e.event_time else None,
-            "action": e.action,
-            "tool_id_number": e.tool_id_number,
-            "tool_name": e.tool_name,
-            "username": e.username,
-            "job_id": e.job_id,
-            "condition": e.condition,
-        }
-        for e in events
-    ])
+    try:
+        limit = min(max(1, int(request.args.get("limit", 20))), 100)
+    except (TypeError, ValueError):
+        limit = 20
+    try:
+        events = (
+            CheckoutHistory.query.order_by(CheckoutHistory.event_time.desc()).limit(limit).all()
+        )
+        return jsonify(events=[
+            {
+                "event_time": e.event_time.isoformat() if e.event_time else None,
+                "action": e.action,
+                "tool_id_number": e.tool_id_number,
+                "tool_name": e.tool_name,
+                "username": e.username,
+                "job_id": e.job_id,
+                "condition": e.condition,
+            }
+            for e in events
+        ])
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.exception("api_history: %s", e)
+        return jsonify(error="Database error", events=[]), 500
 
 
 @bp.route('/api/tools')
 @login_required
 def api_tools():
     """List tools (optional filters: status, checked_out)."""
-    status = request.args.get("status")
-    checked_out = request.args.get("checked_out")
-    q = Tools.query
-    if status:
-        q = q.filter(Tools.tool_status == status)
-    if checked_out == "true":
-        q = q.filter(Tools.checked_out_by.isnot(None))
-    elif checked_out == "false":
-        q = q.filter(Tools.checked_out_by.is_(None))
-    tools = q.order_by(Tools.tool_name).limit(100).all()
-    return jsonify(tools=[
-        {
-            "id": t.id,
-            "tool_id_number": t.tool_id_number,
-            "tool_name": t.tool_name,
-            "tool_location": t.tool_location,
-            "tool_status": t.tool_status,
-            "checked_out_by": t.checked_out_by,
-            "tool_calibration_due": t.tool_calibration_due,
-        }
-        for t in tools
-    ])
+    try:
+        status = request.args.get("status")
+        checked_out = request.args.get("checked_out")
+        q = Tools.query
+        if status:
+            q = q.filter(Tools.tool_status == status)
+        if checked_out == "true":
+            q = q.filter(Tools.checked_out_by.isnot(None))
+        elif checked_out == "false":
+            q = q.filter(Tools.checked_out_by.is_(None))
+        tools = q.order_by(Tools.tool_name).limit(100).all()
+        return jsonify(tools=[
+            {
+                "id": t.id,
+                "tool_id_number": t.tool_id_number,
+                "tool_name": t.tool_name,
+                "tool_location": t.tool_location,
+                "tool_status": t.tool_status,
+                "checked_out_by": t.checked_out_by,
+                "tool_calibration_due": t.tool_calibration_due,
+            }
+            for t in tools
+        ])
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.exception("api_tools: %s", e)
+        return jsonify(error="Database error", tools=[]), 500
 
 
 @bp.route('/api/user-by-badge')
@@ -843,5 +929,9 @@ def api_checkinout():
         return jsonify(status=status, message=message), 400
     except SQLAlchemyError as e:
         db.session.rollback()
-        logger.error(f"Database error: {str(e)}")
+        logger.exception("api_checkinout database error: %s", e)
         return jsonify(status="error", message="A database error occurred. Please try again."), 500
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("api_checkinout error: %s", e)
+        return jsonify(status="error", message="An unexpected error occurred. Please try again."), 500

@@ -30,7 +30,6 @@ def create_app():
         logging.getLogger().addHandler(fh)
     except Exception as _e:
         import sys
-        logging.getLogger(__name__).warning("Could not add atems.log file handler: %s", _e)
         print(f"Could not add atems.log handler: {_e}", file=sys.stderr)
     
     try:
@@ -50,8 +49,8 @@ def create_app():
     # Set the debug mode from environment variable
     app.config["DEBUG"] = os.getenv("DEBUG", "False").lower() == "true"
 
-    # When deployed under subpath (e.g. ), set SCRIPT_NAME so url_for generates correct links
-    app_root = (os.getenv("APPLICATION_ROOT", "") or "").strip().rstrip("/")
+    # When deployed under subpath (e.g. /app/atems), set SCRIPT_NAME so url_for generates correct links
+    app_root = (os.getenv("APPLICATION_ROOT", "/app/atems") or "").strip().rstrip("/")
     if app_root and app_root != "/":
         app.config["APPLICATION_ROOT"] = app_root
 
@@ -69,13 +68,6 @@ def create_app():
     # Trust X-Forwarded-* headers when behind nginx (fixes https URLs, correct Host)
     if not app.config["DEBUG"] or os.getenv("USE_PROXY_FIX", "").lower() == "true":
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-
-    # Request timing: log [PERF] timestamp method path duration_ms (set ATEMS_PERF_LOG_THRESHOLD_MS=0 to log all)
-    try:
-        from utils.performance import get_request_timing_middleware
-        app.wsgi_app = get_request_timing_middleware(app.wsgi_app)
-    except Exception as e:
-        logger.warning("Request timing middleware not installed: %s", e)
 
     # Initialize extensions (init_app does db, login_manager, admin, migrate)
     init_app(app)
@@ -103,6 +95,26 @@ def create_app():
             db.session.add(admin_user)
             db.session.commit()
             logger.info("Created default admin user (admin / admin123). Change password after first login.")
+        # Ensure guest user exists for demo
+        if User.query.filter_by(username="guest").first() is None:
+            guest_user = User(
+                first_name="Guest",
+                last_name="Demo",
+                username="guest",
+                email="guest@alfaquantumdynamics.com",
+                badge_id="GUEST001",
+                phone="5550003000",
+                department="ATEMS",
+                role="guest",
+                supervisor_username="admin",
+                supervisor_email="admin@example.com",
+                supervisor_phone="5550000000",
+            )
+            guest_user.set_password("guest123")
+            db.session.add(guest_user)
+            db.session.commit()
+            logger.info("Created guest demo user (guest / guest123).")
+
     logger.info("Application initialized successfully.")
 
     # Register blueprints

@@ -13,7 +13,7 @@ migrate = Migrate()
 # Custom anonymous user class
 class Anonymous(AnonymousUserMixin):
     def __init__(self):
-        self.username = 'Guest'
+        self.username = 'Anonymous'
 
 # Function to initialize all extensions
 def init_app(app):

@@ -2,7 +2,7 @@
 
 Inventory control software for tool rooms, warehouses, and supply chain operations.
 
-**Login:** Root `/` shows a splash screen with login. Credentials: guest/guest123 · user/user123 · admin/admin123. Run `python scripts/seed_demo_users.py` to create demo users.
+**Login:** Root `/` shows a splash screen with login. Credentials: user/user123 · admin/admin123. Run `python scripts/seed_demo_users.py` to create demo users.
 
 ---
 

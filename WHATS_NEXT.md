@@ -36,16 +36,14 @@
 |----------|----------|------|--------|
 | admin | admin123 | Admin | Full access + Flask-Admin |
 | user | user123 | User | Check-in/out, reports |
-| guest | guest123 | Guest | View-only demo |
 
 ### Features Ready
 - ✅ Professional splash screen
-- ✅ User role system (admin/user/guest)
+- ✅ User role system (admin/user)
 - ✅ 50K tools with realistic data
 - ✅ Tooltips throughout UI
 - ✅ Self-test system integration
 - ✅ **Advanced log viewer (NEW!)**
-- ✅ Guest permissions configured
 - ✅ Tool crib imagery (23 images)
 - ✅ Comprehensive checkout history
 
@@ -111,7 +109,7 @@ python run.py
 - **Admin Panel**: http://localhost:5000/admin (admin only)
 
 ### Test Scenarios
-1. **Guest Demo**: Login as `guest`/`guest123` - View everything, cannot access admin
+1. **User Demo**: Login as `user`/`user123` - View and use app (no admin panel)
 2. **User Workflow**: Login as `user`/`user123` - Check out tool, check it back in
 3. **Admin Management**: Login as `admin`/`admin123` - Access admin panel, view logs
 4. **Log Viewer**:
