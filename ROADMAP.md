@@ -33,10 +33,8 @@ ATEMS/
 ├── static/           # images, styles, styles/js/*
 ├── scripts/          # seed_user.py, seed_tools.py (TBD)
 ├── migrations/       # Alembic with versions
-└── (future) frontend/ # React + Vite + Tailwind (port from Rankings-Bot)
+└── (future) frontend/ # React + Vite + Tailwind
 ```
-
-**Rankings-Bot reference** (same workspace): `../Rankings-Bot/` — React SPA, FastAPI, Tailwind dark theme, StatCards, Sidebar, DraggableDashboard.
 
 ---
 
@@ -144,6 +142,10 @@ README promises:
 - [ ] Extract industry-agnostic core
 - [ ] Example modules: aviation, manufacturing, retail, farming
 
+### Tomorrow (Feb 2026)
+
+- [ ] **Option B: Mount frontend (no image rebuild for website edits)** — When running in Docker, mount built frontend from host instead of copying into image. Website-only edits = build + restart container — no image rebuild. See Rankings-Bot `docs/DOCKER_BASE_AND_SMALL_EDITS.md`. Rankings Bot already uses this.
+
 ---
 
 ## 6. Quick Start (After Phase 1)
@@ -164,13 +166,13 @@ Then open http://127.0.0.1:5000 — login with `admin` / `admin123`, use Admin f
 
 ---
 
-## 7. Rankings-Bot Integration (Without Rankings)
+## 7. Modern Frontend (React SPA)
 
-Integrate patterns and look from `Rankings-Bot` (market-pie5-bot architecture) into ATEMS.
+Integrate a modern SPA frontend with shared core patterns (health, self-test, settings, logs).
 
-### 7.1 What to Port from Rankings-Bot
+### 7.1 Components
 
-| Component | Rankings-Bot | ATEMS Equivalent |
+| Component | Target | ATEMS Equivalent |
 |-----------|--------------|------------------|
 | **Frontend** | React + Vite + TypeScript | Replace Flask/Jinja templates with SPA |
 | **Styling** | Tailwind CSS, dark theme, CSS variables | Match: dark sidebar, stat cards, modern layout |
@@ -187,7 +189,7 @@ Integrate patterns and look from `Rankings-Bot` (market-pie5-bot architecture) i
 
 **Option A — React SPA + Flask API (recommended):**
 - Add Flask REST endpoints (`/api/tools`, `/api/checkinout`, `/api/stats`)
-- Build React frontend in `ATEMS/frontend/` (copy structure from Rankings-Bot)
+- Build React frontend in `ATEMS/frontend/`
 - Serve built React from Flask static or reverse proxy
 - Dark theme, sidebar, StatCards for inventory metrics
 
@@ -196,7 +198,7 @@ Integrate patterns and look from `Rankings-Bot` (market-pie5-bot architecture) i
 - Add StatCard-style sections to dashboard
 - Simpler but less interactive than SPA
 
-### 7.3 Visual Targets (from Rankings-Bot)
+### 7.3 Visual Targets
 
 - **Colors:** Dark theme (`--background`, `--foreground`, `--card`, `--primary`)
 - **Cards:** `bg-card/60 border border-border/50 rounded-lg` with hover states
@@ -260,9 +262,9 @@ Seed tools from major tool-using industries to find bugs during check-in/check-o
 
 ---
 
-## 10. Rankings-Bot Features to Integrate
+## 10. Modern Frontend Features
 
-Based on analysis of the Rankings Bot codebase, these features should be added to ATEMS:
+Features to add for a consistent, modern ATEMS UI:
 
 ### High Priority (Phase 7 - Modern Frontend)
 - [x] **React + TypeScript + Vite Frontend** - Scaffold: frontend/ with Dashboard, StatCards, Sidebar; served at /app
@@ -284,7 +286,7 @@ Based on analysis of the Rankings Bot codebase, these features should be added t
 
 ### Low Priority (Phase 9 - Advanced Features)
 - [ ] **Decision Report System** - Adapt for tool usage decision tracking
-- [ ] **Testing Framework Port** - Copy test runner and patterns from Rankings-Bot
+- [ ] **Testing Framework** - Test runner and patterns for frontend/API
 - [ ] **Code Splitting** - Lazy-loaded pages for faster initial load
 - [ ] **Path Aliases** - TypeScript path aliases (`@/` for `src/`)
 - [ ] **Custom Hooks** - Reusable hooks (useToolStatus, useInventoryStats, useWebSocket)
@@ -294,7 +296,7 @@ Based on analysis of the Rankings Bot codebase, these features should be added t
 ## 11. Deployment & Fixes
 
 - [x] **Deploy prep** — gunicorn in requirements; ProxyFix for https behind Traefik; deploy.sh script; fix systemd Type
-- [ ] **Deploy to website** — web-sites-server/ added (traefik-atems.yml, atems.service, DEPLOY_NOW.md, deploy-to-server.sh); same pattern as rankings-bot
+- [ ] **Deploy to website** — web-sites-server/ (traefik-atems.yml, atems.service, DEPLOY_NOW.md, deploy-to-server.sh)
 - [ ] **Debug** — Run and fix issues in deployed or target environment
 - [ ] **Fix HTTP** — Resolve HTTP/HTTPS, redirects, headers, or mixed-content issues
 - [ ] **Fix API** — Resolve API connectivity, CORS, base URL, or endpoint issues in production
@@ -308,7 +310,7 @@ Based on analysis of the Rankings Bot codebase, these features should be added t
 3. ~~Add **API routes** for tools, stats, checkinout (JSON) for future SPA.~~ ✅ Done (`/api/health`, `/api/stats`, `/api/tools`, `/api/checkinout`)
 4. ~~Professional splash screen and demo site setup~~ ✅ Done (splash.html, 50K tools, demo accounts)
 5. **Deployment & Fixes** — Deploy to website; debug; fix HTTP and API (see §11)
-6. **Start Phase 7** — Plan React frontend migration (copy Rankings-Bot `frontend/` structure)
+6. **Start Phase 7** — Plan React frontend migration
 7. **Port Draggable Dashboard** — Implement widget-based dashboard with localStorage persistence
 8. **Add Advanced Log Viewer** — Multi-filter log viewer with view presets
 9. **Implement Settings Presets** — Tool crib configurations (Small Shop, Large Factory, etc.)
