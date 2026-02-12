@@ -1,7 +1,7 @@
 """
 Error Pattern Tests - ATEMS
 Tests for common error patterns found in logs. Ensures errors are caught by selftest.
-Adapted from Rankings-Bot test_error_patterns.
+Error-pattern tests for ATEMS API.
 """
 import pytest
 
@@ -43,7 +43,7 @@ class TestFormValidationErrors:
 
 
 class TestSystemHealthIntegration:
-    """System health / selftest API (integrated like Rankings-Bot)."""
+    """System health / selftest API."""
 
     @pytest.mark.usefixtures("db_session", "seed_user")
     def test_system_health_requires_login(self, client):

@@ -11,7 +11,7 @@ from datetime import datetime
 
 
 class Tools(db.Model):
-    """Model for tools"""
+    """Model for tools. Supports AFI 21-101 / CTK: positive control, calibration, Master Inventory List (MIL)."""
     id = db.Column(db.Integer, primary_key=True)
     tool_id_number = db.Column(db.String(64), nullable=False)
     tool_name = db.Column(db.String(64), nullable=False)

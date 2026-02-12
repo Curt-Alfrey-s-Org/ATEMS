@@ -1,16 +1,25 @@
-# Port Info — All on Server (192.168.0.105)
+# Port Info — ATEMS on Server (192.168.0.105)
 
-**No Docker for apps, no Nginx.** Traefik handles routing.
+**ATEMS runs systemd, Nginx handles HTTP/HTTPS routing.**
 
-## Server-only (ATEMS & rankings-bot on 192.168.0.105)
+## ATEMS Architecture
 
-| Port | App | Subdomain | Traefik backend |
-|------|-----|-----------|-----------------|
-| 8001 | Rankings Bot | rankings-bot.alfaquantumdynamics.com | host.docker.internal:8001 |
-| 5000 | ATEMS | atems.alfaquantumdynamics.com | 192.168.0.105:5000 |
+| Port | Service | Purpose | Notes |
+|------|---------|---------|-------|
+| 5000 | ATEMS (gunicorn) | Flask app + API | Listens on 127.0.0.1:5000 (localhost only) |
+| 80 | Nginx | HTTP reverse proxy | Public-facing, proxies to :5000 |
+| 443 | Nginx | HTTPS reverse proxy | Public-facing (via Let's Encrypt), proxies to :5000 |
 
-## ATEMS verify
+## Verify
 
-`curl -s http://127.0.0.1:5000/ | head -c 100`
+**Local verification** (on server):
+```bash
+curl -s http://127.0.0.1:5000/ | head -c 100
+```
 
-See **TRAEFIK_ATEMS.md** for full setup.
+**Public verification** (from anywhere):
+```bash
+curl -s https://atems.alfaquantumdynamics.com/ | head -c 100
+```
+
+See **NGINX_DEPLOYMENT.md** for full setup.

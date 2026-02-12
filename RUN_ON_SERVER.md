@@ -48,13 +48,19 @@ Everything runs on the server. Repo lives there; build and run there.
    sudo systemctl enable --now atems
    ```
 
-8. **Traefik:**
+8. **Nginx (reverse proxy):**
    ```bash
-   sudo cp web-sites-server/traefik-atems.yml /etc/traefik/dynamic/atems.yml
-   sudo docker restart traefik
+   sudo cp web-sites-server/nginx-atems.conf /etc/nginx/sites-available/atems
+   sudo ln -s /etc/nginx/sites-available/atems /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
    ```
 
-9. **DNS:** Cloudflare A record `atems.alfaquantumdynamics.com` → 192.168.0.105
+9. **HTTPS (Let's Encrypt):**
+   ```bash
+   sudo certbot --nginx -d atems.alfaquantumdynamics.com
+   ```
+
+10. **DNS:** Cloudflare A record `atems.alfaquantumdynamics.com` → 192.168.0.105
 
 ---
 

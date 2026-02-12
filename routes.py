@@ -8,9 +8,63 @@ from datetime import datetime, time
 from sqlalchemy.exc import SQLAlchemyError
 from utils.calibration import is_calibration_overdue
 import logging
+import bcrypt
 
 bp = Blueprint('main', __name__)
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# ENVIRONMENT-BASED USER CREDENTIALS (inspired by rankings-bot)
+# ============================================================================
+
+# Default credentials (fallback if env vars not set)
+_DEFAULT_USERS = {
+    "admin": ("admin", "admin123"),
+    "user": ("user", "user123"),
+}
+
+_ENV_USERS = {}
+
+
+def _load_env_users():
+    """
+    Load environment-based credentials from env variables.
+    Format: ADMIN_USERNAME/ADMIN_PASSWORD, USER_USERNAME/USER_PASSWORD
+    Falls back to defaults if not configured.
+    """
+    global _ENV_USERS
+    _ENV_USERS = _DEFAULT_USERS.copy()  # Start with defaults
+    
+    # Admin credentials (override default)
+    admin_user = os.getenv("ADMIN_USERNAME", "").strip()
+    admin_pass = os.getenv("ADMIN_PASSWORD", "").strip()
+    if admin_user and admin_pass:
+        _ENV_USERS[admin_user] = ("admin", admin_pass)
+        logger.info(f"Loaded admin user from env: {admin_user}")
+    
+    # User credentials (override default)
+    user_user = os.getenv("USER_USERNAME", "").strip()
+    user_pass = os.getenv("USER_PASSWORD", "").strip()
+    if user_user and user_pass:
+        _ENV_USERS[user_user] = ("user", user_pass)
+        logger.info(f"Loaded user from env: {user_user}")
+    
+    logger.info(f"Auth system initialized with {len(_ENV_USERS)} environment-based users")
+
+
+def _check_env_password(username: str, password: str) -> tuple[bool, str]:
+    """Check credentials against environment-based users. Returns (success, role)."""
+    if not _ENV_USERS:
+        _load_env_users()
+    
+    if username not in _ENV_USERS:
+        return False, ""
+    
+    expected_role, expected_pass = _ENV_USERS[username]
+    if expected_pass == password:
+        return True, expected_role
+    
+    return False, ""
 
 @bp.app_context_processor
 def inject_datetime():
@@ -175,18 +229,75 @@ def dashboard():
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+    Login endpoint supporting:
+    1. Environment-based credentials (admin, user)
+    2. Database-backed users with bcrypt password hashing
+    
+    Pattern inspired by rankings-bot for simplicity and clarity.
+    """
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
+    
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
+        username = (request.form.get('username') or "").strip()
+        password = request.form.get('password') or ""
+        
+        # Validation: username required
+        if not username:
+            flash('Username required.', 'error')
+            return render_template('login.html')
+        
+        # Step 1: Check environment-based credentials (admin/user)
+        env_ok, env_role = _check_env_password(username, password)
+        if env_ok:
+            # Create or get admin user from environment
+            user = User.query.filter_by(username=username).first()
+            if not user:
+                # Create temporary admin user from environment credentials
+                logger.info(f"Creating environment-based user: {username} with role {env_role}")
+                user = User(
+                    username=username,
+                    email=f"{username}@local.env",
+                    first_name=username.capitalize(),
+                    last_name="(env)",
+                    badge_id=f"ENV-{username}",
+                    phone="0000000000",
+                    department="Administration",
+                    supervisor_username=username,
+                    supervisor_email=f"{username}@local.env",
+                    supervisor_phone="0000000000",
+                    role=env_role
+                )
+                user.set_password(password)
+                db.session.add(user)
+                try:
+                    db.session.commit()
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    logger.error(f"Error creating environment user: {e}")
+                    flash('Login system error. Please try again.', 'error')
+                    return render_template('login.html')
+            
             login_user(user)
+            logger.info(f"User '{username}' logged in via environment-based credentials as {env_role}")
             flash(f'Welcome back, {user.username}!', 'success')
             next_page = request.args.get('next') or url_for('main.dashboard')
             return redirect(next_page)
+        
+        # Step 2: Check database-backed users
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            login_user(user)
+            logger.info(f"User '{username}' logged in via database-backed credentials as {user.role}")
+            flash(f'Welcome back, {user.username}!', 'success')
+            next_page = request.args.get('next') or url_for('main.dashboard')
+            return redirect(next_page)
+        
+        # Step 3: Log failed attempt and return error
+        logger.warning(f"Failed login attempt for username: {username}")
         flash('Invalid username or password.', 'error')
+    
     return render_template('login.html')
 
 
@@ -297,12 +408,12 @@ def api_health():
     return jsonify(status="healthy", service="ATEMS", version="1.0.0")
 
 
-# --- System / Self-Test (integrated like Rankings-Bot) ---
+# --- System / Self-Test ---
 
 @bp.route('/api/system/health')
 @login_required
 def api_system_health():
-    """System health with self_test. Cached 60s. Matches Rankings-Bot /api/system/health shape."""
+    """System health with self_test. Cached 60s."""
     from flask import current_app
     from selftest.system import get_system_health
     return jsonify(get_system_health(current_app))
@@ -311,7 +422,7 @@ def api_system_health():
 @bp.route('/api/system/run-tests', methods=['POST'])
 @login_required
 def api_system_run_tests():
-    """Run full self-test suite on demand (GUI button). Matches Rankings-Bot POST /api/system/run-tests."""
+    """Run full self-test suite on demand (GUI button)."""
     from selftest.system import run_full_selftest
     return jsonify(run_full_selftest())
 
@@ -319,21 +430,21 @@ def api_system_run_tests():
 @bp.route('/selftest')
 @login_required
 def selftest_page():
-    """Self-Test page: view status, run tests (like Rankings-Bot SelfTestPanel)."""
+    """Self-Test page: view status, run tests."""
     return render_template('selftest.html')
 
 
 @bp.route('/logs')
 @login_required
 def logs_page():
-    """Advanced log viewer page (adapted from Rankings-Bot)."""
+    """Advanced log viewer page."""
     return render_template('logs.html')
 
 
 @bp.route('/settings')
 @login_required
 def settings_page():
-    """Settings page with categories and presets (adapted from Rankings-Bot)."""
+    """Settings page with categories and presets."""
     return render_template('settings.html')
 
 

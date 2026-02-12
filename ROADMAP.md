@@ -142,6 +142,53 @@ README promises:
 - [ ] Extract industry-agnostic core
 - [ ] Example modules: aviation, manufacturing, retail, farming
 
+### Phase 6.5 — PostgreSQL Migration ✅ COMPLETE (Feb 2026)
+
+**Status:** Complete — ATEMS migrated from SQLite to PostgreSQL for production use.
+
+**What was done:**
+- [x] Created `docker-compose.yml` with PostgreSQL service (port 5436)
+- [x] Added `init-db.sql` for database initialization with extensions
+- [x] Updated `requirements.txt` with `psycopg2-binary>=2.9.9`
+- [x] Updated `.env` and `.env.example` with PostgreSQL configuration
+- [x] Enhanced `extensions.py` with database-aware connection pooling:
+  - PostgreSQL: QueuePool with pool_size=10, max_overflow=20, pool_pre_ping=True
+  - SQLite: StaticPool with pool_size=1 (fallback for development)
+- [x] Updated `gunicorn.conf.py` to use 4 workers with PostgreSQL (1 for SQLite)
+- [x] Verified model compatibility (all Flask-SQLAlchemy models work with PostgreSQL)
+
+**Database Details:**
+- **Service:** atems-postgres (PostgreSQL 16 Alpine)
+- **Port:** 5436 (external) → 5432 (internal)
+- **Database:** atems
+- **User:** atems_user
+- **Network:** traefik_traefik (shared with other bots)
+
+**Environment Variables:**
+```env
+DATABASE_URL=postgresql://atems_user:password@atems-postgres:5432/atems
+SQLALCHEMY_DATABASE_URI=postgresql://atems_user:password@atems-postgres:5432/atems
+POSTGRES_DB=atems
+POSTGRES_USER=atems_user
+POSTGRES_PASSWORD=your_secure_password
+```
+
+**Deployment:**
+```bash
+cd /home/ansible/atems
+docker-compose up -d atems-postgres  # Start PostgreSQL
+docker-compose up -d atems-api       # Start ATEMS with PostgreSQL
+# Run migrations if needed:
+docker-compose exec atems-api flask db upgrade
+```
+
+**Benefits:**
+- ✅ Multi-worker gunicorn support (4 workers, up from 1)
+- ✅ No "database is locked" errors
+- ✅ Better concurrent user support
+- ✅ Production-ready connection pooling
+- ✅ Consistent with other bots (contracts-bot, credit-check-bot, market-pie5-bot)
+
 ### Tomorrow (Feb 2026)
 
 - [ ] **Option B: Mount frontend (no image rebuild for website edits)** — When running in Docker, mount built frontend from host instead of copying into image. Website-only edits = build + restart container — no image rebuild. See Rankings-Bot `docs/DOCKER_BASE_AND_SMALL_EDITS.md`. Rankings Bot already uses this.

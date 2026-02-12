@@ -8,7 +8,7 @@
 4. **Settings Page with Presets** — New `/settings` page with Tool Crib, Calibration, Appearance, Logs sections; presets Small Shop, Large Factory, Demo Site; save/reset to localStorage.
 5. **Log Viewer + Tests** — Verified logs page and API; added 5 tests for logs/settings (login required, 200 when logged in, API logs JSON).
 
-### Earlier: Advanced Log Viewer (Adapted from Rankings-Bot)
+### Earlier: Advanced Log Viewer
 - **New Page**: `/logs` - Professional log viewer with multi-filter support
 - **Features**:
   - View presets (All, Errors, Warnings, Info, Debug, Critical, Tools)
@@ -69,7 +69,7 @@
    - Add usage trends
    - Add category breakdown
 
-### Medium Term (Phase 7 - Rankings-Bot Integration)
+### Medium Term (Phase 7 - Modern frontend)
 4. **Draggable Dashboard Widgets**
    - Port DraggableDashboard.tsx concept
    - Allow users to rearrange stat cards
@@ -147,7 +147,7 @@ python run.py
 - [ ] Barcode/RFID integration
 - [ ] Mobile-friendly interface
 
-### Phase 7 - Modern Frontend (Rankings-Bot Integration)
+### Phase 7 - Modern Frontend
 - [ ] React + TypeScript + Vite
 - [ ] Draggable dashboard widgets
 - [ ] Advanced settings with presets
@@ -223,7 +223,6 @@ python -c "from atems import create_app; from extensions import db; from models 
 - **Demo Site Docs**: `DEMO_SITE_README.md`
 - **Deployment Guide**: `NGINX_DEPLOYMENT.md`
 - **Roadmap**: `ROADMAP.md`
-- **Rankings-Bot Reference**: `../Rankings-Bot/`
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Run ATEMS fully on the server (192.168.0.105).** See **RUN_ON_SERVER.md** for the primary flow.
 
-**Use Traefik (not Nginx)** — See **TRAEFIK_ATEMS.md** for the full API/HTTP/Traefik flow.
+**Use Nginx as reverse proxy** — See **NGINX_DEPLOYMENT.md** for the full deployment flow. For legacy Traefik setup, see **TRAEFIK_ATEMS.md** (deprecated).
 
 ---
 
@@ -34,7 +34,7 @@
    ssh ansible@192.168.0.105
    ```
 
-2. **Follow RUN_ON_SERVER.md** for the full one-time setup (clone, venv, .env, db, frontend, systemd, Traefik).
+2. **Follow RUN_ON_SERVER.md** for the full one-time setup (clone, venv, .env, db, frontend, systemd, Nginx).
 
 ---
 
@@ -58,7 +58,7 @@ flask db upgrade
 
 ---
 
-## Quick checklist (Traefik path)
+## Quick checklist (Nginx path)
 
 | Step               | Command / action |
 |--------------------|------------------|
@@ -66,6 +66,7 @@ flask db upgrade
 | One-time: .env     | Copy .env.example to .env, set SECRET_KEY, DB URI, DEBUG=False |
 | One-time: DB       | On server: `flask db upgrade` |
 | One-time: systemd  | Copy `atems.service` → /etc/systemd/system/, daemon-reload, enable, start |
-| One-time: Traefik  | Copy `traefik-atems.yml` → /etc/traefik/dynamic/atems.yml, restart traefik |
+| One-time: Nginx    | Copy `web-sites-server/nginx-atems.conf` → /etc/nginx/sites-available/atems, link to sites-enabled, test, reload |
+| One-time: HTTPS    | Run `sudo certbot --nginx -d atems.alfaquantumdynamics.com` |
 | One-time: DNS      | Cloudflare A record atems.alfaquantumdynamics.com → 192.168.0.105 |
 | Update             | `sudo systemctl restart atems` |

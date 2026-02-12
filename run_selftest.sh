@@ -1,7 +1,6 @@
 #!/bin/bash
 # ATEMS Self-Test Runner
 # Runs startup selftests + pytest (including error-pattern tests).
-# Adapted from Rankings-Bot run_selftest / run_tests.
 # Use this to catch errors before they show up in logs.
 
 cd "$(dirname "$0")"

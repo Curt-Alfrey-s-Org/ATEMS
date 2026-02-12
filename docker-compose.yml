@@ -1,0 +1,87 @@
+# ATEMS - Docker Compose Configuration
+# ⚠️ CRITICAL - DO NOT MODIFY:
+#    - Network names: tunnel_network (cf-alfa) + atems-network (postgres)
+#    - Port 5000: Coordinated with nginx, tunnel routing, monitoring
+#    - 127.0.0.1 binding: Security requirement (APIs localhost only)
+#    - See: .github/PORT_ASSIGNMENTS.md for complete reference
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL Database for ATEMS
+  # ============================================================================
+  atems-postgres:
+    image: postgres:16-alpine
+    container_name: atems-postgres
+    environment:
+      POSTGRES_DB: atems
+      POSTGRES_USER: atems_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5436:5432"
+    volumes:
+      - atems-postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - atems-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atems_user -d atems"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=16MB"
+
+  # ============================================================================
+  # ATEMS API (Flask Application)
+  # ============================================================================
+  atems-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atems-api
+    environment:
+      - ENVIRONMENT=production
+      - PORT=5000
+      - DATABASE_URL=postgresql://atems_user:${POSTGRES_PASSWORD:-changeme123}@atems-postgres:5432/atems
+      - SQLALCHEMY_DATABASE_URI=postgresql://atems_user:${POSTGRES_PASSWORD:-changeme123}@atems-postgres:5432/atems
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=False
+      - GUNICORN_WORKERS=4
+    # Using 127.0.0.1 for security - only nginx can access via Docker network
+    ports:
+      - "127.0.0.1:5000:5000"
+    depends_on:
+      atems-postgres:
+        condition: service_healthy
+    networks:
+      - atems-network
+      - tunnel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  atems-postgres-data:
+    name: atems-postgres-data
+
+networks:
+  atems-network:
+    driver: bridge
+    name: atems-network
+  tunnel_network:
+    external: true

@@ -1,7 +1,7 @@
 """
 ATEMS Startup Self-Tests
 Runs at app init and via run_selftest.sh - catches errors before they appear in logs.
-Adapted from Rankings-Bot startup self-tests.
+Startup self-tests for ATEMS API.
 """
 import time
 import subprocess

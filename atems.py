@@ -84,25 +84,27 @@ def create_app():
     with app.app_context():
         from models import Tools, CheckoutHistory  # ensure all models registered for create_all
         db.create_all()
-        # If no users exist, create default admin so you can log in
+        # If no users exist, create default admin so you can log in (same env pattern as other bots)
         if User.query.count() == 0:
+            admin_username = os.getenv("ADMIN_USERNAME", "admin")
+            admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
             admin_user = User(
                 first_name="System",
                 last_name="Administrator",
-                username="admin",
-                email="admin@example.com",
+                username=admin_username,
+                email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
                 badge_id="ADMIN001",
                 phone="5550000000",
                 department="ATEMS",
                 role="admin",
-                supervisor_username="admin",
-                supervisor_email="admin@example.com",
+                supervisor_username=admin_username,
+                supervisor_email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
                 supervisor_phone="5550000000",
             )
-            admin_user.set_password("admin123")
+            admin_user.set_password(admin_password)
             db.session.add(admin_user)
             db.session.commit()
-            logger.info("Created default admin user (admin / admin123). Change password after first login.")
+            logger.info("Created default admin user from ADMIN_USERNAME/ADMIN_PASSWORD. Change password after first login.")
     logger.info("Application initialized successfully.")
 
     # Register blueprints

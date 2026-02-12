@@ -2,7 +2,7 @@
 
 Use this to deploy to the Ubuntu server (e.g. 192.168.0.105) so the app is live at **https://atems.alfaquantumdynamics.com**.
 
-**Use Traefik (not Nginx)** — Same setup as rankings-bot. See **TRAEFIK_ATEMS.md** for the full API/HTTP/Traefik flow.
+**Use Traefik (not Nginx).** See **TRAEFIK_ATEMS.md** for the full API/HTTP/Traefik flow.
 
 ---
 

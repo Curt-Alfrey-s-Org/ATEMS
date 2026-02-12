@@ -12,6 +12,7 @@ SQLAlchemy==2.0.46
 alembic==1.18.3
 Flask-Migrate==4.1.0
 PyMySQL==1.1.0
+psycopg2-binary==2.9.9
 
 # Admin
 Flask-Admin==2.0.2

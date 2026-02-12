@@ -1,6 +1,6 @@
 """
 ATEMS System Health & Self-Test
-Integrated like Rankings-Bot: GET /api/system/health returns self_test, POST run-tests triggers full suite.
+GET /api/system/health returns self_test; POST run-tests triggers full suite.
 """
 import os
 import sys
@@ -23,7 +23,7 @@ _http_tests_results = None
 
 
 def _run_internal_self_tests(app):
-    """Run internal self-tests (direct checks, no HTTP). Returns dict like Rankings-Bot."""
+    """Run internal self-tests (direct checks, no HTTP). Returns health/self_test dict."""
     from selftest.startup import run_startup_selftests
     passed, failed, results = run_startup_selftests(app=app, logger=None)
     total = passed + failed
@@ -54,6 +54,27 @@ def _run_internal_self_tests(app):
     }
 
 
+def _check_frontend_api_base_url(project_root: Path):
+    """
+    Fail if frontend defaults to localhost:8000 (causes screen-not-updating when
+    deployed or when API runs on another port). Use same-origin '' or VITE_API_URL instead.
+    Scans frontend/src for .ts, .tsx, .js, .jsx.
+    """
+    frontend_src = project_root / "frontend" / "src"
+    if not frontend_src.exists():
+        return True, None
+    bad = "localhost:8000"
+    for ext in ("*.ts", "*.tsx", "*.js", "*.jsx"):
+        for path in frontend_src.rglob(ext):
+            try:
+                text = path.read_text(encoding="utf-8")
+                if bad in text:
+                    return False, f"Frontend has localhost:8000 in {path.relative_to(project_root)}; use same-origin '' or VITE_API_URL so UI works on subdomain"
+            except Exception as e:
+                return False, str(e)[:80]
+    return True, None
+
+
 def _run_http_self_tests():
     """Run HTTP-based self-tests (hit our own API)."""
     try:
@@ -69,6 +90,16 @@ def _run_http_self_tests():
     results = []
     passed = failed = 0
     timings = {}
+    project_root = Path(__file__).resolve().parent.parent
+
+    # Frontend API base URL (no hardcoded localhost:8000)
+    t0 = time.time()
+    ok, err = _check_frontend_api_base_url(project_root)
+    elapsed = (time.time() - t0) * 1000
+    timings["frontend_api_base_url"] = elapsed
+    results.append({"name": "Frontend API base URL", "passed": ok, "duration_ms": elapsed, "error": None if ok else (err or "bad default")})
+    passed += 1 if ok else 0
+    failed += 0 if ok else 1
 
     # API Health (public, no auth)
     t0 = time.time()
@@ -144,7 +175,7 @@ def _log_selftest_run(returncode, stdout, stderr, duration_s, timeout_s):
 
 
 def get_system_health(app):
-    """Get system health with self_test. Uses cache. Matches Rankings-Bot response shape."""
+    """Get system health with self_test. Uses cache."""
     global _self_test_cache, _http_tests_run, _http_tests_results
 
     now = time.time()

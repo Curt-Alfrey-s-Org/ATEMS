@@ -48,6 +48,10 @@ class User(db.Model, UserMixin):
         """Check if user can access Flask-Admin panel."""
         return self.role == 'admin'
 
+    def is_ctk_custodian(self):
+        """True if user is designated as CTK (tool control) custodian (AFI 21-101)."""
+        return self.role == 'ctk_custodian'
+
     def __repr__(self):
         return '<User {}, Username: {}, Email: {}, Badge ID: {}, Phone: {}, Department: {}, Supervisor Username: {}, Supervisor Email: {}, Supervisor Phone: {}, Manager Username: {}, Manager Email: {}, Manager Phone: {}>'.format(self.first_name, self.username, self.email, self.badge_id, self.phone, self.department, self.supervisor_username, self.supervisor_email, self.supervisor_phone, self.manager_username, self.manager_email, self.manager_phone)
 
@@ -59,12 +63,12 @@ class UserView(ModelView):
     column_default_sort = ('first_name','last_name', 'username', True)
     column_sortable_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_labels = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='Role', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
-    column_descriptions = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='User Role (admin/user)', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
+    column_descriptions = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='User Role (admin, user, or CTK Custodian for AFI 21-101)', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
     column_details_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_export_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_choices = dict(
         department=[('ATEMS', 'ATEMS'), ('Engineering', 'Engineering'), ('Manufacturing', 'Manufacturing'), ('Quality', 'Quality'), ('Supply Chain', 'Supply Chain'), ('Test', 'Test')],
-        role=[('admin', 'Admin'), ('user', 'User')]
+        role=[('admin', 'Admin'), ('user', 'User'), ('ctk_custodian', 'CTK Custodian')]
     )
     
     def is_accessible(self):

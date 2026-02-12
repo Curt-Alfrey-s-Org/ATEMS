@@ -1,10 +1,21 @@
-# ATEMS behind Traefik — Setup on Ansible (Same as Rankings Bot)
+# ATEMS Traefik Deployment — DEPRECATED
 
-**Cursor: Use this Traefik setup, not Nginx.** Mirrors the rankings-bot pattern.
+**⚠️ DEPRECATED (2026-02-10):** This guide documents the legacy Traefik-based deployment. **Use Nginx instead.** See [NGINX_DEPLOYMENT.md](NGINX_DEPLOYMENT.md) for the current standard.
 
-Use the **existing Traefik** reverse proxy on the webserver (192.168.0.105). ATEMS runs via systemd on the same host; Traefik (in Docker) proxies to it via `host.docker.internal`.
+## Migration Notes
 
-## Architecture (from rankings-bot SERVER_SETUP_REVIEW)
+As of 2026-02-10, ATEMS has standardized on **Nginx-only** architecture. Traefik has been removed from the ATEMS deployment configuration. All new deployments should use Nginx as the reverse proxy.
+
+- **Old architecture:** Traefik (Docker) on webserver → gunicorn on host
+- **New architecture:** Nginx → gunicorn on same host
+- **Benefits:** Simpler setup, no Docker required, reduced complexity
+- **Nginx config:** See `web-sites-server/nginx-atems.conf`
+
+## Legacy Traefik Setup (Archive Reference)
+
+Traefik on the webserver (192.168.0.105) routes HTTPS to ATEMS. ATEMS runs via systemd on the same host; Traefik proxies to it via `host.docker.internal`.
+
+## Architecture
 
 ```
 Internet (HTTPS)
@@ -31,13 +42,12 @@ Webserver 192.168.0.105
 3. **host.docker.internal** — From inside the Traefik container, the host is `host.docker.internal`. The API must listen on **0.0.0.0:5000** so it’s reachable.
 4. **If 502** — Try `http://172.17.0.1:5000` in the Traefik config if `host.docker.internal` isn’t available on your Docker setup.
 
-## Port scheme (same-host deployment)
+## Port scheme
 
-| Service  | Host          | Port | Subdomain                        |
-|----------|---------------|------|----------------------------------|
-| Rankings Bot | 192.168.0.105 | 8001 | rankings-bot.alfaquantumdynamics.com |
-| ATEMS    | 192.168.0.105 | 5000 | atems.alfaquantumdynamics.com    |
-| Traefik  | 192.168.0.105 | 80/443 | —                              |
+| Service | Host          | Port   | Subdomain                     |
+|---------|---------------|--------|-------------------------------|
+| ATEMS   | 192.168.0.105 | 5000   | atems.alfaquantumdynamics.com |
+| Traefik | 192.168.0.105 | 80/443 | —                             |
 
 ## Steps
 

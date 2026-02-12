@@ -1,10 +1,10 @@
-# ATEMS behind Traefik — Setup on Ansible (Same as Rankings Bot)
+# ATEMS behind Traefik — Setup on Ansible
 
-**Cursor: Use this Traefik setup, not Nginx.** Mirrors the rankings-bot pattern.
+**Use Traefik for reverse proxy (not Nginx).**
 
-Use the **existing Traefik** reverse proxy on the webserver (192.168.0.105). ATEMS runs via systemd on the same host; Traefik (in Docker) proxies to it via `host.docker.internal`.
+Traefik on the webserver (192.168.0.105) routes HTTPS to ATEMS. ATEMS runs via systemd on the same host; Traefik proxies to it via `host.docker.internal`.
 
-## Architecture (from rankings-bot SERVER_SETUP_REVIEW)
+## Architecture
 
 ```
 Internet (HTTPS)
@@ -31,13 +31,12 @@ Webserver 192.168.0.105
 3. **host.docker.internal** — From inside the Traefik container, the host is `host.docker.internal`. The API must listen on **0.0.0.0:5000** so it’s reachable.
 4. **If 502** — Try `http://172.17.0.1:5000` in the Traefik config if `host.docker.internal` isn’t available on your Docker setup.
 
-## Port scheme (same-host deployment)
+## Port scheme
 
-| Service  | Host          | Port | Subdomain                        |
-|----------|---------------|------|----------------------------------|
-| Rankings Bot | 192.168.0.105 | 8001 | rankings-bot.alfaquantumdynamics.com |
-| ATEMS    | 192.168.0.105 | 5000 | atems.alfaquantumdynamics.com    |
-| Traefik  | 192.168.0.105 | 80/443 | —                              |
+| Service | Host          | Port   | Subdomain                     |
+|---------|---------------|--------|-------------------------------|
+| ATEMS   | 192.168.0.105 | 5000   | atems.alfaquantumdynamics.com |
+| Traefik | 192.168.0.105 | 80/443 | —                             |
 
 ## Steps
 
@@ -110,4 +109,4 @@ Add **A record**: **atems.alfaquantumdynamics.com** → **192.168.0.105**
 | Nginx     | Not used                             |
 | ProxyFix  | Yes (in atems.py for correct HTTPS)  |
 
-All apps run on the webserver (192.168.0.105). See **PORT_INFO.md** for the full port scheme.
+See **PORT_INFO.md** for the port scheme.
