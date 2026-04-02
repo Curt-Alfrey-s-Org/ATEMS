@@ -2,14 +2,14 @@
 
 Use this to deploy to the Ubuntu server (e.g. 192.168.0.105) so the app is live at **https://atems.alfaquantumdynamics.com**.
 
-**Use Traefik (not Nginx).** See **TRAEFIK_ATEMS.md** for the full API/HTTP/Traefik flow.
+**Use Nginx (legacy proxy removed).** See **NGINX_DEPLOYMENT.md** for the current flow.
 
 ---
 
 ## Prerequisites
 
 - DNS: **atems.alfaquantumdynamics.com** points to the server IP (or use IP for testing).
-- SSH access to the server as **ansible** (or adjust paths in Traefik + systemd).
+- SSH access to the server as **ansible** (or adjust paths in Nginx + systemd).
 
 ---
 
@@ -66,7 +66,7 @@ Use this to deploy to the Ubuntu server (e.g. 192.168.0.105) so the app is live 
    cd ..
    ```
 
-6. **Traefik** (one-time): Copy `traefik-atems.yml` to `/etc/traefik/dynamic/atems.yml` on the server; Traefik handles HTTPS.
+6. **Nginx** (one-time): Copy `nginx-atems.conf` to `/etc/nginx/sites-available/atems`, enable, and reload Nginx.
 
 7. **Start ATEMS** (one-time, then systemd keeps it running):
    - From Mint: `scp web-sites-server/atems.service ansible@192.168.0.105:~/`
@@ -101,7 +101,7 @@ sudo systemctl restart atems
 
 ---
 
-## Quick checklist (Traefik path)
+## Quick checklist (Nginx path)
 
 | Step               | Command / action |
 |--------------------|------------------|
@@ -109,6 +109,6 @@ sudo systemctl restart atems
 | One-time: .env     | Copy .env.example to .env, set SECRET_KEY, DB URI, DEBUG=False |
 | One-time: DB       | On server: `flask db upgrade` |
 | One-time: systemd  | Copy `atems.service` → /etc/systemd/system/, daemon-reload, enable, start |
-| One-time: Traefik  | Copy `traefik-atems.yml` → /etc/traefik/dynamic/atems.yml, restart traefik |
+| One-time: Nginx    | Copy `nginx-atems.conf` → /etc/nginx/sites-available/atems, enable, reload |
 | One-time: DNS      | Cloudflare A record atems.alfaquantumdynamics.com → 192.168.0.105 |
 | Update             | `sudo systemctl restart atems` |

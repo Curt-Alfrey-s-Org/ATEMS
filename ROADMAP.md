@@ -6,6 +6,12 @@
 
 ---
 
+## Current Priority
+
+- [ ] **Deployment & fixes** — Deploy to website; debug; fix HTTP and API connectivity in production. Then start Phase 7 (React frontend migration).
+
+---
+
 ## 1. Executive Summary
 
 ATEMS (Automated Tool and Equipment Management System) is inventory control software for tool rooms, warehouses, and supply chain operations. The project uses a modular vision: a shared core with plug-in modules for different industries.
@@ -162,7 +168,7 @@ README promises:
 - **Port:** 5436 (external) → 5432 (internal)
 - **Database:** atems
 - **User:** atems_user
-- **Network:** traefik_traefik (shared with other bots)
+- **Network:** tunnel_network (shared with other bots)
 
 **Environment Variables:**
 ```env
@@ -342,8 +348,8 @@ Features to add for a consistent, modern ATEMS UI:
 
 ## 11. Deployment & Fixes
 
-- [x] **Deploy prep** — gunicorn in requirements; ProxyFix for https behind Traefik; deploy.sh script; fix systemd Type
-- [ ] **Deploy to website** — web-sites-server/ (traefik-atems.yml, atems.service, DEPLOY_NOW.md, deploy-to-server.sh)
+- [x] **Deploy prep** — gunicorn in requirements; ProxyFix for https behind Nginx; deploy.sh script; fix systemd Type
+- [ ] **Deploy to website** — web-sites-server/ (nginx-atems.conf, atems.service, DEPLOY_NOW.md, deploy-to-server.sh)
 - [ ] **Debug** — Run and fix issues in deployed or target environment
 - [ ] **Fix HTTP** — Resolve HTTP/HTTPS, redirects, headers, or mixed-content issues
 - [ ] **Fix API** — Resolve API connectivity, CORS, base URL, or endpoint issues in production
@@ -361,3 +367,31 @@ Features to add for a consistent, modern ATEMS UI:
 7. **Port Draggable Dashboard** — Implement widget-based dashboard with localStorage persistence
 8. **Add Advanced Log Viewer** — Multi-filter log viewer with view presets
 9. **Implement Settings Presets** — Tool crib configurations (Small Shop, Large Factory, etc.)
+
+---
+
+## Features & Improvements (backlog)
+
+| Area | Item |
+|------|------|
+| Frontend | Draggable dashboard widgets; advanced log viewer; settings presets |
+| UX | Real-time WebSocket updates; connection status indicator |
+| Ops | Option B: mount frontend (no image rebuild); deploy to website |
+| Data | Remove/fix `tool_cat.py` (low priority) |
+
+### Tech Debt
+
+- `tool_cat.py` in models — move to scripts/ or remove
+- Duplicate alembic in requirements.txt
+- User.phone `unique=True` — consider nullable for flexibility
+- Templates reference non-existent report routes
+
+---
+
+## References
+
+- [docs/USAF_TOOL_ACCOUNTABILITY_RESEARCH.md](docs/USAF_TOOL_ACCOUNTABILITY_RESEARCH.md) — USAF tool accountability
+- [docs/AFI_21_101_COMPLIANCE.md](docs/AFI_21_101_COMPLIANCE.md) — AFI 21-101 compliance
+- [docs/ATEMS_IMPROVEMENTS.md](docs/ATEMS_IMPROVEMENTS.md) — Improvement ideas
+- [docs/ATEMS_TEST_REPORT.md](docs/ATEMS_TEST_REPORT.md) — Test report
+- Rankings-Bot `docs/DOCKER_BASE_AND_SMALL_EDITS.md` — Option B mount frontend

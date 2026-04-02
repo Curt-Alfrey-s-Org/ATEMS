@@ -24,7 +24,7 @@ Improvements applied from patterns used in workspace docs and other APIs (e.g. m
 - **Startup self-tests** — `selftest/startup.py` (syntax, imports, app structure).
 - **Pytest** — `conftest.py`, fixtures for app, client, db_session, seed_user, seed_tool.
 - **Tests** — startup_test, test_http_and_api, test_checkinout, test_error_patterns, test_readme_claims.
-- **Deployment** — RUN_ON_SERVER.md, TRAEFIK_ATEMS.md, PORT_INFO.md, atems.service, traefik-atems.yml.
+- **Deployment** — RUN_ON_SERVER.md, NGINX_DEPLOYMENT.md, PORT_INFO.md, atems.service, nginx-atems.conf.
 
 ---
 

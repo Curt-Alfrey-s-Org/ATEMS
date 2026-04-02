@@ -404,8 +404,23 @@ def checkinout():
 
 @bp.route('/api/health')
 def api_health():
-    """Health check for API."""
-    return jsonify(status="healthy", service="ATEMS", version="1.0.0")
+    """Health check for API and load balancers. Always returns 200; status reflects DB reachability."""
+    from sqlalchemy import text
+
+    db_ok = True
+    try:
+        db.session.execute(text("SELECT 1"))
+    except Exception:
+        db_ok = False
+        logger.warning("Health check: database ping failed", exc_info=True)
+
+    status = "healthy" if db_ok else "degraded"
+    return jsonify(
+        status=status,
+        service="ATEMS",
+        version="1.0.0",
+        database="ok" if db_ok else "unavailable",
+    )
 
 
 # --- System / Self-Test ---

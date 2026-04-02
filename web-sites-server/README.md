@@ -4,11 +4,10 @@ Files for deploying ATEMS to https://atems.alfaquantumdynamics.com.
 
 | File | Purpose |
 |------|---------|
-| `traefik-atems.yml` | Traefik dynamic config (primary — no Nginx) |
+| `nginx-atems.conf` | Nginx site config (primary reverse proxy) |
 | `atems.service` | systemd unit for gunicorn |
-| `TRAEFIK_ATEMS.md` | API/HTTP/Traefik setup |
 | `DEPLOY_NOW.md` | Step-by-step deploy instructions |
 | `PORT_INFO.md` | Port scheme |
-| Traefik | Use `traefik-atems.yml` (no Nginx) |
+| Nginx | Use `nginx-atems.conf` |
 
-See **TRAEFIK_ATEMS.md** for the full setup on the ansible server.
+See **NGINX_DEPLOYMENT.md** for the current Nginx setup on the ansible server.

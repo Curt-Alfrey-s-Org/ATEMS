@@ -13,4 +13,4 @@ COPY . .
 EXPOSE 5000
 
 # Run gunicorn with config
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "atems:create_app()"]
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "atems:app"]

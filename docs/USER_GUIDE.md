@@ -65,7 +65,7 @@ ATEMS can support Air Force CTK (Consolidated Tool Kit) requirements under AFI 2
 ## Deployment
 
 - **Port** — Default 5000 (see `PORT_INFO.md`).
-- **Reverse proxy** — Traefik config: `traefik-atems.yml`; see `TRAEFIK_ATEMS.md`, `RUN_ON_SERVER.md`, `DEPLOY_NOW.md`.
+- **Reverse proxy** — Nginx config: `nginx-atems.conf`; see `NGINX_DEPLOYMENT.md`, `RUN_ON_SERVER.md`, `DEPLOY_NOW.md`.
 - **Service** — `atems.service` (systemd) for gunicorn.
 
 ---

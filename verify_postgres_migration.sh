@@ -72,19 +72,25 @@ echo ""
 
 # Docker-compose validation
 echo "Docker Compose validation:"
-if docker-compose config > /dev/null 2>&1; then
+COMPOSE_CMD=""
+if docker compose version &>/dev/null 2>&1; then
+  COMPOSE_CMD="docker compose"
+elif command -v docker-compose &>/dev/null; then
+  COMPOSE_CMD="docker-compose"
+fi
+if [ -n "$COMPOSE_CMD" ] && $COMPOSE_CMD config > /dev/null 2>&1; then
     echo -e "${GREEN}✅${NC} docker-compose.yml is valid"
 else
-    echo -e "${RED}❌${NC} docker-compose.yml has errors"
+    echo -e "${RED}❌${NC} docker-compose.yml has errors (or docker compose not installed)"
 fi
 echo ""
 
-# Check if traefik network exists
+# Check if tunnel_network exists (Nginx/Cloudflare tunnel)
 echo "Network check:"
-if docker network inspect traefik_traefik > /dev/null 2>&1; then
-    echo -e "${GREEN}✅${NC} traefik_traefik network exists"
+if docker network inspect tunnel_network > /dev/null 2>&1; then
+    echo -e "${GREEN}✅${NC} tunnel_network exists"
 else
-    echo -e "${YELLOW}⚠️${NC}  traefik_traefik network not found (will be created if external: false)"
+    echo -e "${YELLOW}⚠️${NC}  tunnel_network not found (will be created if external: false)"
 fi
 echo ""
 

@@ -86,7 +86,7 @@ Flask uses **synchronous** database operations, requiring different pooling and 
    - PostgreSQL 16 service (port 5436)
    - ATEMS API service (port 5000)
    - Health checks and dependencies
-   - Network: traefik_traefik
+   - Network: tunnel_network
 
 2. **init-db.sql**
    - Database initialization
@@ -130,7 +130,7 @@ Port: 5436:5432 (external:internal)
 Database: atems
 User: atems_user
 Volume: atems-postgres-data
-Network: traefik_traefik
+Network: tunnel_network
 Health Check: pg_isready
 ```
 
@@ -400,7 +400,7 @@ ATEMS joins the PostgreSQL bot ecosystem:
 | **atems** | **Flask** | **5436** | **PostgreSQL** | **✅** |
 
 All bots share:
-- Network: `traefik_traefik`
+- Network: `tunnel_network`
 - Docker deployment pattern
 - PostgreSQL 16 Alpine image
 - Environment-based configuration
@@ -468,14 +468,14 @@ docker-compose exec atems-postgres cat /var/lib/postgresql/data/postgresql.conf
 **Solution:**
 ```bash
 # Check network exists
-docker network inspect traefik_traefik
+docker network inspect tunnel_network
 
 # If not, set external: false in docker-compose.yml
 # Or create network:
-docker network create traefik_traefik
+docker network create tunnel_network
 
 # Verify containers are on network
-docker network inspect traefik_traefik | grep atems
+docker network inspect tunnel_network | grep atems
 ```
 
 ---
@@ -536,7 +536,7 @@ docker network inspect traefik_traefik | grep atems
 1. **High Availability**
    - PostgreSQL replication (streaming)
    - Multiple ATEMS API instances
-   - Load balancer (Nginx/Traefik)
+   - Load balancer (Nginx)
    - Shared storage for uploads
 
 2. **Security**

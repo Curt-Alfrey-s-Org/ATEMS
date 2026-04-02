@@ -104,13 +104,24 @@ class TestApiPublic:
     """Public API endpoints (no login required)."""
 
     def test_api_health_returns_200_and_healthy(self, client):
-        """GET /api/health returns 200 with status=healthy."""
+        """GET /api/health returns 200 with status=healthy and database ok when DB is up."""
         r = client.get("/api/health")
         assert r.status_code == 200
         data = r.get_json()
         assert data is not None
         assert data.get("status") == "healthy"
         assert data.get("service") == "ATEMS"
+        assert data.get("database") == "ok"
+        assert r.headers.get("X-Request-ID")
+
+    def test_api_unknown_route_returns_json_404(self, client):
+        """GET /api/nonexistent returns JSON 404 with error shape."""
+        r = client.get("/api/does-not-exist-xyz")
+        assert r.status_code == 404
+        data = r.get_json()
+        assert data is not None
+        assert data.get("error") == "not_found"
+        assert data.get("request_id")
 
     def test_api_user_by_badge_no_param_returns_200(self, client):
         """GET /api/user-by-badge with no param returns 200, username null."""

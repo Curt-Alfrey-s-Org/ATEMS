@@ -78,13 +78,14 @@ class TestApiErrorResponses:
     """API should return consistent error structure."""
 
     def test_api_health_structure(self, client):
-        """API health returns status, service, version."""
+        """API health returns status, service, version, database."""
         r = client.get("/api/health")
         assert r.status_code == 200
         data = r.get_json()
         assert data.get("status") == "healthy"
         assert data.get("service") == "ATEMS"
         assert "version" in data
+        assert data.get("database") in ("ok", "unavailable")
 
     @pytest.mark.usefixtures("db_session", "seed_tool")
     def test_unknown_user_returns_error_message(self, client, seed_tool):

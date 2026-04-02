@@ -91,7 +91,7 @@ workers = int(os.environ.get("GUNICORN_WORKERS") or default_workers)
   - Port: 5000:5000
   - Depends on: atems-postgres (health check)
   - Workers: 4 (GUNICORN_WORKERS)
-  - Network: traefik_traefik
+  - Network: tunnel_network
 
 **init-db.sql**
 - Database initialization script
@@ -326,7 +326,7 @@ ATEMS joins the PostgreSQL ecosystem:
 | rankings-bot | FastAPI | PostgreSQL | 5435 |
 | **atems** | **Flask** | **PostgreSQL** | **5436** |
 
-All share the `traefik_traefik` Docker network.
+All share the `tunnel_network` Docker network.
 
 ---
 
@@ -339,7 +339,7 @@ All share the `traefik_traefik` Docker network.
 **Solution:**
 ```bash
 # Check network
-docker network inspect traefik_traefik
+docker network inspect tunnel_network
 
 # Verify service name in DATABASE_URL
 # Use: atems-postgres:5432 (not localhost:5436)

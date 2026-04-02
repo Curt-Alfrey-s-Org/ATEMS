@@ -1,4 +1,7 @@
 # ATEMS - Docker Compose Configuration
+# atems-api uses user: ${HOST_UID}:${HOST_GID} so bind-mounted app dirs (if present) stay owned by the host deploy user.
+# For manual compose: . ./scripts/export_compose_uid_gid.sh && write_compose_host_user_env "$PWD" ; pass --env-file .env.compose-host-user to docker compose.
+
 # ⚠️ CRITICAL - DO NOT MODIFY:
 #    - Network names: tunnel_network (cf-alfa) + atems-network (postgres)
 #    - Port 5000: Coordinated with nginx, tunnel routing, monitoring
@@ -50,6 +53,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: atems-api
+    # Host deploy user (e.g. ansible): scripts/export_compose_uid_gid.sh sets HOST_UID/HOST_GID
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       - ENVIRONMENT=production
       - PORT=5000
@@ -68,8 +73,15 @@ services:
       - atems-network
       - tunnel_network
     restart: unless-stopped
+    # Use JSON health endpoint (same as rankings-bot style probes); python base image has no curl.
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health', timeout=4)",
+        ]
       interval: 15s
       timeout: 5s
       retries: 3

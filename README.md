@@ -4,6 +4,13 @@ Inventory control software for tool rooms, warehouses, and supply chain operatio
 
 **Workspace:** [All bots overview](../docs/BOTS_OVERVIEW.md) · [Quick reference](../docs/QUICK_REFERENCE.md)
 
+## Production Ports (Server)
+
+See `/home/ansible/.github/PORT_ASSIGNMENTS.md` for the canonical list.
+
+- **API host binding:** `127.0.0.1:5000`
+- **Database host binding:** `5436:5432`
+
 **Login:** Root `/` shows a splash screen with login. Credentials: user/user123 · admin/admin123. Run `python scripts/seed_demo_users.py` to create demo users.
 
 ---
@@ -48,3 +55,5 @@ Files for deploying ATEMS to https://alfaquantumdynamics.com/app/atems.
 | `PORT_INFO.md` | Port mapping and arch |
 
 See **RUN_ON_SERVER.md** for the full setup. **docs/ATEMS_TEST_REPORT.md** for test and splash login details. **docs/USER_GUIDE.md** for quick start, login, reports, and deployment.
+
+**Ops / reliability:** API JSON errors and `X-Request-ID` for `/api/*`, DB-aware `/api/health`, and Docker healthcheck details are summarized in [IMPROVEMENTS_FROM_RANKINGS.md](IMPROVEMENTS_FROM_RANKINGS.md) (patterns aligned with rankings-bot where applicable).

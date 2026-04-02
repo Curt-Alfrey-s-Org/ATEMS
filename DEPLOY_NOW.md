@@ -2,14 +2,14 @@
 
 **Run ATEMS fully on the server (192.168.0.105).** See **RUN_ON_SERVER.md** for the primary flow.
 
-**Use Nginx as reverse proxy** — See **NGINX_DEPLOYMENT.md** for the full deployment flow. For legacy Traefik setup, see **TRAEFIK_ATEMS.md** (deprecated).
+**Use Nginx as reverse proxy** — See **NGINX_DEPLOYMENT.md** for the full deployment flow.
 
 ---
 
 ## Prerequisites
 
 - DNS: **atems.alfaquantumdynamics.com** points to the server IP (or use IP for testing).
-- SSH access to the server as **ansible** (or adjust paths in Traefik + systemd).
+- SSH access to the server as **ansible** (or adjust paths in Nginx + systemd).
 
 ---
 

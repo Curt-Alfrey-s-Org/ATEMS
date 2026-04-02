@@ -101,14 +101,14 @@ else:
 - Port: `5436:5432` (external:internal)
 - Database: `atems`
 - User: `atems_user`
-- Network: `traefik_traefik`
+- Network: `tunnel_network`
 
 **atems-api:**
 - Build: `./atems/Dockerfile`
 - Port: `5000:5000`
 - Depends on: `atems-postgres` (health check)
 - Workers: 4 (via `GUNICORN_WORKERS` env)
-- Network: `traefik_traefik`
+- Network: `tunnel_network`
 
 ### Environment Variables
 
@@ -390,7 +390,7 @@ GUNICORN_WORKERS=8
 ```bash
 # Check network
 docker network ls
-docker network inspect traefik_traefik
+docker network inspect tunnel_network
 
 # Verify containers on same network
 docker-compose ps
@@ -453,7 +453,7 @@ ATEMS now uses the same database pattern as:
 - rankings-bot (PostgreSQL port 5435)
 - **atems (PostgreSQL port 5436)** ← New
 
-All bots share the `traefik_traefik` network for inter-service communication.
+All bots share the `tunnel_network` network for inter-service communication.
 
 ---
 
