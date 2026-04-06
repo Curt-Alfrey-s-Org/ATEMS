@@ -6,6 +6,12 @@
 
 ---
 
+## Backlog — AI inline doc references (apply later)
+
+Mirror **rankings-bot** (Flask/Jinja here, same idea): `../rankings-bot/docs/AI_INLINE_DOC_REF_PROCESS.md` — hub docs + file-header pointers for auth (`Flask-Login`), models/migrations, and deploy.
+
+---
+
 ## Current Priority
 
 - [ ] **Deployment & fixes** — Deploy to website; debug; fix HTTP and API connectivity in production. Then start Phase 7 (React frontend migration).
