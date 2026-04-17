@@ -1,0 +1,68 @@
+# Keep the Docker build context small and the final image reproducible.
+# https://docs.docker.com/build/building/context/#dockerignore-files
+
+# Notes, docs, plans — not shipped.
+*.md
+docs/
+CONTRIBUTING.md
+README*.md
+RUN_ON_SERVER.md
+PLAN_TOMORROW.md
+WHATS_NEXT.md
+ROADMAP.md
+RULES.md
+POSTGRESQL_*.md
+MYSQL_*.md
+COMPETITOR_RESEARCH.md
+DEMO_SITE_README.md
+DEPLOY_NOW.md
+DESKTOP_ICON.md
+IMPROVEMENTS_FROM_RANKINGS.md
+LOGIN_REFACTOR_SUMMARY.md
+NGINX_DEPLOYMENT.md
+PORT_INFO.md
+
+# Local data / runtime artifacts.
+*.db
+*.log
+instance/
+logs/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual envs & vendored python.
+venv/
+.venv/
+vatems/
+
+# VCS / IDE.
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+
+# Tests, selftests, and one-off scripts (not needed in runtime image).
+tests/
+selftest/
+conftest.py
+pytest.ini
+run_tests.sh
+run_atems_tests.sh
+run_selftest.sh
+verify_postgres_migration.sh
+deploy_atems_postgres.sh
+
+# Frontend source — handled by separate build pipeline if used.
+frontend/
+web-sites-server/
+
+# Desktop launchers & splash (not needed in server image).
+*.desktop
+splash.html
+atems.service
+start_atems.sh

@@ -1,16 +1,38 @@
+# syntax=docker/dockerfile:1
+# ATEMS Flask API — layered image for fast rebuilds.
+#
+# The previous `COPY . .` pulled every markdown note, local .db file, logs,
+# and virtualenv into the build context (often >1 GB) and invalidated the
+# app layer on every unrelated repo change. This version only copies the
+# files the app actually imports at runtime, and pairs with .dockerignore
+# to keep the build context slim.
+
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy requirements first
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+# --- Dependency layer (changes only when requirements.txt changes) ----------
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
-COPY . .
+# --- Application layer (changes on normal code commits) ---------------------
+COPY atems.py /app/
+COPY extensions.py /app/
+COPY forms.py /app/
+COPY routes.py /app/
+COPY gunicorn.conf.py /app/
+COPY models/ /app/models/
+COPY utils/ /app/utils/
+COPY scripts/ /app/scripts/
+COPY templates/ /app/templates/
+COPY static/ /app/static/
+COPY migrations/ /app/migrations/
 
-# Expose port 5000
 EXPOSE 5000
 
-# Run gunicorn with config
 CMD ["gunicorn", "-c", "gunicorn.conf.py", "atems:app"]

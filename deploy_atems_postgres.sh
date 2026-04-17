@@ -60,51 +60,18 @@ echo "Step 1: Building ATEMS Docker image..."
 compose build atems-api
 
 echo ""
-echo "Step 2: Starting PostgreSQL..."
-compose up -d atems-postgres
-
-echo ""
-echo "Step 3: Waiting for PostgreSQL to be ready..."
-sleep 5
-
-# Wait for PostgreSQL health check
-echo "Checking PostgreSQL health..."
-retries=30
-while [ $retries -gt 0 ]; do
-    if compose ps | grep -q "atems-postgres.*healthy"; then
-        echo -e "${GREEN}PostgreSQL is ready!${NC}"
-        break
-    fi
-    retries=$((retries - 1))
-    echo "Waiting for PostgreSQL... ($retries retries left)"
-    sleep 2
-done
-
-if [ $retries -eq 0 ]; then
-    echo -e "${RED}Error: PostgreSQL failed to start${NC}"
-    compose logs atems-postgres
+echo "Step 2: Starting PostgreSQL + ATEMS API..."
+echo "  (docker compose up --wait blocks until service healthchecks pass; see docker-compose.yml)"
+if ! compose up -d --wait atems-postgres atems-api; then
+    echo -e "${RED}Error: compose up --wait failed${NC}"
+    compose logs atems-postgres 2>/dev/null || true
+    compose logs atems-api 2>/dev/null || true
     exit 1
 fi
+echo -e "${GREEN}PostgreSQL and ATEMS API are healthy.${NC}"
 
 echo ""
-echo "Step 4: Starting ATEMS API..."
-compose up -d atems-api
-
-echo ""
-echo "Step 5: Waiting for ATEMS API to be ready..."
-sleep 3
-
-# Check if ATEMS is running
-if compose ps | grep -q "atems-api.*Up"; then
-    echo -e "${GREEN}ATEMS API is running!${NC}"
-else
-    echo -e "${RED}Error: ATEMS API failed to start${NC}"
-    compose logs atems-api
-    exit 1
-fi
-
-echo ""
-echo "Step 6: Running database migrations..."
+echo "Step 3: Running database migrations..."
 compose exec -T atems-api flask db upgrade || {
     echo -e "${YELLOW}Note: Migrations may not exist yet. Creating tables with db.create_all()...${NC}"
     echo "Tables will be created automatically on first run."
