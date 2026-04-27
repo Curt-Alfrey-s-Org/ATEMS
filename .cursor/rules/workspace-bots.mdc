@@ -1,0 +1,22 @@
+---
+description: Workspace structure when working in the 4 bot projects
+globs: "*-bot/**"
+alwaysApply: false
+---
+
+# 4-Bot Workspace
+
+When working in contracts-bot, credit-check-bot, market-pie5-bot, or rankings-bot:
+
+## Structure
+
+Each bot has: `frontend/` (React + Vite + TypeScript) and backend (FastAPI). Frontends share patterns: SplashScreen, LoginForm, Sidebar, dark theme.
+
+## Key difference
+
+- **rankings-bot** uses `@/contexts/AuthContext` (plural)
+- **Other 3 bots** use `@/context/AuthContext` (singular)
+
+## For multi-bot changes
+
+Apply consistently across all 4. Use bot-multiplatform subagent or Composer. Reference `@ARCHITECTURE.md` and `@CURSOR_GUIDE.md` for structure.

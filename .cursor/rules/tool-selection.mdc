@@ -1,0 +1,50 @@
+---
+description: Suggest the best Cursor tool (Chat, Agent, Composer) for the task
+alwaysApply: true
+---
+
+# Tool Selection
+
+When the user asks for help, assess whether another Cursor mode would serve them better. If so, say so at the start of your response before proceeding.
+
+## When to suggest Composer (Ctrl+I or Cmd+I)
+
+- Multi-file edits or refactors
+- Changes that span multiple projects, bots, or apps
+- "Add X to all 4 bots" or similar cross-repo tasks
+- Creating new features that touch many components
+
+**Say**: "**Composer** (Ctrl+I) is better for this. When you open it, paste this: [brief, copy-paste-ready prompt with scope and requirements]. I can still help here if you prefer."
+
+## When to suggest Agent mode
+
+- Tasks that need terminal commands, file operations, and code edits together
+- Multi-step workflows (install, configure, test)
+- When the user wants the AI to execute changes autonomously
+
+**Say**: "**Agent** mode is better for this. When you switch, paste this: [brief, copy-paste-ready prompt with steps and scope]. I can still help here if you prefer."
+
+## When to stay in current mode (Chat)
+
+- Explanations, debugging, or "how does X work?"
+- Single-file or small edits
+- Architecture or design questions
+- Quick answers or snippets
+
+Proceed without suggesting a switch.
+
+## Format
+
+1. **Suggest** the better mode and shortcut (Ctrl+I / Cmd+I for Composer).
+2. **Provide a handoff prompt**: A concise, copy-paste-ready instruction the user can give to the other mode. Include enough context (files, scope, requirements) so they don't have to re-explain.
+3. **Offer** to continue in the current mode if they prefer.
+
+### Handoff prompt example
+
+User asks: "Add a dark mode toggle to all my bots"
+
+**Say**: "**Composer** (Ctrl+I) is better for this. When you open it, paste this:
+
+> Add a dark mode toggle to all 4 bot frontends (contracts-bot, credit-check-bot, market-pie5-bot, rankings-bot). Add to the Settings page in each. Match the existing UI theme. Persist the preference in localStorage.
+
+I can still help plan or debug here if you'd like."

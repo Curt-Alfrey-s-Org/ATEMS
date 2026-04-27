@@ -1,0 +1,243 @@
+---
+description: Check ports and use canonical assignments before deploy (homelab)
+alwaysApply: true
+---
+
+# Port Assignment & Conflict Prevention Rules
+
+## Critical: ALWAYS Follow These Rules When Deploying ANY Service
+
+### Rule 1: Check Port Availability BEFORE Any Deployment
+```bash
+# ALWAYS run this before deploying or restarting any service:
+sudo lsof -i -P -n | grep LISTEN
+# OR use faster check for specific port:
+sudo lsof -ti :PORT_NUMBER
+```
+
+### Rule 2: AUTHORIZED PORT ASSIGNMENTS (DO NOT DEVIATE)
+These ports are permanently assigned to these services:
+
+| Service | Port | Binding | Notes |
+|---------|------|---------|-------|
+| Yacht (Portainer) | 8000 | Public (0.0.0.0) | Host only - NEVER CHANGE |
+| Contracts Bot API | 8002 | Localhost only | Container internal: 8000 → Host: 8002 |
+| Rankings Bot API | 8003 | Localhost only | Container internal: 8003 → Host: 8003 |
+| Market Bot API | 8004 | Localhost only | Container internal: 8000 → Host: 8004 |
+| Credit Check Bot API | 8005 | Localhost only | Container internal: 8000 → Host: 8005 |
+| Market Bot Frontend | 5176 | Public | Optional local debug |
+| Contracts Bot Frontend | 5175 | Public | Nginx frontend (internal: 80) |
+| Credit Check Bot Frontend | 8009 | Public | Optional local debug |
+| ATEMS | 5000 | Localhost only | Flask app (proxied by nginx) |
+
+### Rule 3: Container Port Declaration Checklist
+When creating Docker containers, MUST verify:
+
+```bash
+# ❌ DO NOT DO THIS:
+docker run -p 9999:8000 service  # Uses unauthorized port!
+
+# ✅ DO THIS INSTEAD:
+# 1. Check what port is needed
+# 2. Check if it's available: sudo lsof -ti :PORT
+# 3. Only if free, use it
+# 4. Always specify BOTH ports you're binding
+docker run -p EXTERNAL_PORT:INTERNAL_PORT service
+```
+
+### Rule 4: When Starting Services - MANDATORY STEPS
+
+1. **BEFORE docker run or docker-compose up:**
+   ```bash
+   # Kill any existing services on that port
+   sudo lsof -ti :PORT_NUMBER | xargs -r sudo kill -9
+   
+   # Verify port is now free
+   sudo lsof -ti :PORT_NUMBER  # Should return empty
+   ```
+
+2. **When using docker run:**
+   ```bash
+   docker run -d -p 127.0.0.1:8003:8003 my-service
+   # NOT just: docker run -d my-service
+   ```
+
+3. **When using docker-compose:**
+   - Check the `ports:` section in docker-compose.yml
+   - Verify no conflicts with assigned ports
+   - Do NOT run multiple incompatible services simultaneously
+
+4. **After starting:**
+   ```bash
+   # Verify port is listening
+   sudo lsof -i :PORT_NUMBER | grep LISTEN
+   # Test service accessibility
+   curl http://localhost:PORT_NUMBER
+   ```
+
+### Rule 5: Docker Compose Port Conflicts Prevention
+
+When building/pulling docker-compose services:
+
+**FORBIDDEN:**
+```yaml
+# ❌ BAD - These will conflict!
+services:
+  service1:
+      ports:
+         - "127.0.0.1:8003:8003"
+   service2:
+      ports:
+         - "127.0.0.1:8003:8003"  # DUPLICATE PORT 8003!
+```
+
+**REQUIRED:**
+```yaml
+# ✅ GOOD - Check port_selftest.sh first!
+services:
+  service1:
+    ports:
+         - "127.0.0.1:8003:8003"  # Rankings Bot API
+  service2:
+    ports:
+         - "5176:80"  # Market Bot Frontend
+```
+
+### Rule 6: Network Configuration - Nginx + Cloudflare Tunnel
+
+For services behind nginx reverse proxy + cf-alfa tunnel:
+
+1. **Internal Port**: Container uses its internal port (8000, 8003, 80)
+2. **Host Port**: APIs bind to 127.0.0.1 (localhost only)
+3. **Container DNS**: Nginx reaches APIs via container name on tunnel_network
+
+Example:
+```yaml
+# In docker-compose.yml
+services:
+  rankings-bot-api:
+    ports:
+      - "127.0.0.1:8003:8003"  # Host 8003 → Container 8003
+    networks:
+      - tunnel_network  # Must connect to tunnel_network
+```
+
+```nginx
+# In nginx.conf (inside nginx container)
+location /api/ {
+  proxy_pass http://rankings-bot-api:8003/api/;
+}
+```
+
+### Rule 7: Temporary Testing - KILL When Done
+
+```bash
+# For temporary port 8004 testing ONLY:
+# 1. Start service
+python3 -m uvicorn api.main:app --port 8004
+
+# 2. Test
+curl http://localhost:8004/api/health
+
+# 3. KILL IMMEDIATELY when done (DO NOT LEAVE RUNNING!)
+sudo lsof -ti :8004 | xargs -r sudo kill -9
+
+# 4. Verify it's dead
+sudo lsof -ti :8004  # Should return empty
+```
+
+### Rule 8: What to Do When Port Is Already In Use
+
+**Error Symptom:**
+```
+Error: bind: address already in use
+ERROR: for service 'address already in use'
+```
+
+**Step-by-Step Fix:**
+
+1. **Find what's using the port:**
+   ```bash
+   sudo lsof -i :PORT_NUMBER
+   ```
+
+2. **Identify the process:**
+   - Check if it's the correct service (should show in COMMAND column)
+   - Check the PID
+
+3. **Stop it properly:**
+   ```bash
+   # Option A: If it's a Docker container
+   docker ps | grep PORT_NUMBER  # Find container
+   docker stop CONTAINER_NAME
+   docker rm CONTAINER_NAME  # Remove old instance
+   
+   # Option B: If it's a regular process
+   sudo kill -9 PID_NUMBER
+   
+   # Option C: Kill by port (nuclear option)
+   sudo lsof -ti :PORT_NUMBER | xargs -r sudo kill -9
+   ```
+
+4. **Verify it's dead:**
+   ```bash
+   sudo lsof -ti :PORT_NUMBER  # Should return NOTHING
+   ```
+
+5. **Then start service:**
+   ```bash
+   docker run -p PORT:INTERNAL_PORT my-service
+   ```
+
+### Rule 9: Pre-Deployment Checklist
+
+**BEFORE deploying ANY service, agent must:**
+
+- [ ] Run `sudo lsof -i -P -n | grep LISTEN` to see current port usage
+- [ ] Check [port_selftest.sh](../../port_selftest.sh) for authorized assignments
+- [ ] Verify external port is NOT in use: `sudo lsof -ti :PORT_NUMBER`
+- [ ] Kill existing services on that port if needed
+- [ ] Run service with explicit external:internal port mapping
+- [ ] Test with curl to verify accessibility
+- [ ] If using docker-compose, verify `ports:` section matches authorized ports
+- [ ] If temporary test port (8004), commit to killing it when done
+
+### Rule 10: Reference Before Every Deployment
+
+**DO NOT ASSUME** a port is free. **ALWAYS CHECK**:
+
+```bash
+# Check port_selftest.sh for assignments
+cat /home/ansible/port_selftest.sh | grep -A 20 "EXPECTED_PORTS"
+
+# Check current usage
+sudo lsof -i -P -n | grep LISTEN  # Shows ALL listening ports
+
+# Check specific port
+sudo lsof -ti :8003  # Returns PID if in use, empty if free
+```
+
+---
+
+## Consequences of NOT Following These Rules
+
+- ❌ Services fail to start (port already in use)
+- ❌ Server becomes inaccessible
+- ❌ Traefik routing breaks
+- ❌ Frontend connections fail
+- ❌ API containers can't listen
+- ❌ Database UI (Yacht) goes down
+- ❌ All bots become unavailable
+
+---
+
+## Related Documentation
+
+- [port_selftest.sh](../../port_selftest.sh) - Verification script
+- [PORT_INFO.md](../../atems/PORT_INFO.md) - Detailed port descriptions
+- [docke-compose.yml examples](../../rankings-bot/Rankings-Bot/docker-compose.yml)
+
+---
+
+**Last Updated:** 2026-02-06
+**Critical for:** All Docker deployments, service restarts, infrastructure changes

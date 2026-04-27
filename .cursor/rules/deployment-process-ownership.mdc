@@ -1,0 +1,98 @@
+---
+description: Deployment and process ownership must follow industry standards
+alwaysApply: true
+---
+
+# Deployment & Process Ownership Standards
+
+**CRITICAL:** All deployment code and documentation must align with industry standards and official deployment guidance.
+
+## Core Principles
+
+### 1. Single Process Manager (Production)
+- **Production MUST use a process manager** — systemd (recommended), supervisord, or container orchestration
+- **NO duplicate starters** — Only one mechanism starts/restarts each service/port
+- **Standards reference:** 
+  - Twelve-Factor App (Factor VI - Processes): [12factor.net/processes](https://12factor.net/processes)
+  - FastAPI deployment: [fastapi.tiangolo.com/deployment](https://fastapi.tiangolo.com/deployment/)
+  - Project: `.github/CODING_STANDARDS.md` and `rankings-bot/Rankings-Bot/docs/PRODUCTION_API_OWNERSHIP.md`
+
+### 2. Development vs Production
+- **Production:** Process manager (systemd) starts and monitors services
+- **Development:** Scripts may start services directly, but still only ONE owner per port
+- **Scripts must delegate:** When systemd service exists, scripts use `systemctl` (not direct start)
+
+```bash
+# Good pattern for scripts
+if command -v systemctl &>/dev/null && systemctl cat rankings-bot-api.service &>/dev/null; then
+  # Production: delegate to systemd (single owner)
+  sudo systemctl restart rankings-bot-api
+  exit 0
+fi
+# Dev: start directly (no systemd)
+nohup python3 -m uvicorn api.main:app --host 0.0.0.0 --port $PORT >> api.log 2>&1 &
+```
+
+### 3. Documentation Standards
+When documenting deployment:
+- **State clearly:** Production uses process manager; development may use scripts
+- **NO "systemd or script"** as equal production options — production = process manager
+- **Scripts delegate:** Document that scripts check for systemd and use `systemctl` when service exists
+- **Link standards:** Reference Twelve-Factor, FastAPI/uvicorn docs, and CODING_STANDARDS.md
+
+## Anti-Patterns to Reject
+
+❌ **"systemd or restart_api.sh" in production docs** — Implies two equal options  
+✅ **"Production: systemd; restart_api.sh delegates to systemd"** — Clear hierarchy
+
+❌ **Scripts that start uvicorn when systemd service exists** — Causes "address in use"  
+✅ **Scripts check for systemd and delegate to `systemctl restart`** — Single owner
+
+❌ **Two processes on same port** — systemd + script both start uvicorn  
+✅ **One owner per service/port** — Only systemd manages production services
+
+## Examples
+
+### Good: Script with Delegation
+```bash
+#!/bin/bash
+# Production: systemd owns API; this script delegates
+# Dev: script starts directly
+
+if command -v systemctl &>/dev/null && systemctl cat rankings-bot-api.service &>/dev/null; then
+  echo "Restarting via systemd (production single owner)..."
+  sudo systemctl restart rankings-bot-api
+  exit 0
+fi
+
+# Dev fallback
+pid=$(lsof -t -i :$PORT 2>/dev/null || true)
+[ -n "$pid" ] && kill "$pid"
+nohup python3 -m uvicorn api.main:app --host 0.0.0.0 --port $PORT >> api.log 2>&1 &
+```
+
+### Good: Documentation
+```markdown
+## Production Deployment
+
+**Process manager:** Production runs under systemd for reliability and monitoring.
+
+**Restart:** Use `sudo systemctl restart rankings-bot-api` or `./scripts/restart_api.sh` (script delegates to systemd when service exists).
+
+**Standards:** Follows Twelve-Factor (processes), FastAPI deployment guidance, and project CODING_STANDARDS.md.
+```
+
+### Bad: Ambiguous Documentation
+```markdown
+## Deployment
+
+Run the API with systemd or restart_api.sh.  ❌ Ambiguous
+```
+
+## Enforcement
+
+When reviewing/writing:
+- Deployment docs: Must specify "production = process manager; scripts delegate"
+- Deployment scripts: Must check for systemd and delegate with `systemctl` when service exists
+- Code changes: Must not create duplicate service starters
+- All: Must cite standards (Twelve-Factor, FastAPI docs, CODING_STANDARDS.md)

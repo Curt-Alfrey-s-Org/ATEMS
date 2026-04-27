@@ -4,6 +4,10 @@ Inventory control software for tool rooms, warehouses, and supply chain operatio
 
 **Workspace:** [All bots overview](../docs/BOTS_OVERVIEW.md) · [Quick reference](../docs/QUICK_REFERENCE.md)
 
+## Shared dependency cache
+
+This repo pulls pip and npm deps through the server-wide cache at **`/srv/dep-cache`** so containers and host builds don't redownload packages between rebuilds. `Dockerfile` uses BuildKit cache mounts with shared id `bots-pip`; `scripts/build_on_server.sh` points npm at `/srv/dep-cache/npm`. Manage with `/srv/dep-cache/bin/dep-cache {status,prune --older-than 30d,clear}`. Details: `/srv/dep-cache/README.md`.
+
 ## Production Ports (Server)
 
 See `/home/ansible/.github/PORT_ASSIGNMENTS.md` for the canonical list.

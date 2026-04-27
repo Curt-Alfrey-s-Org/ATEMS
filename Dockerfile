@@ -7,18 +7,20 @@
 # files the app actually imports at runtime, and pairs with .dockerignore
 # to keep the build context slim.
 
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # --- Dependency layer (changes only when requirements.txt changes) ----------
+# pip cache is shared across all bot repos via BuildKit id=bots-pip
+# (see /srv/dep-cache/README.md for purge tooling).
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,id=bots-pip,target=/root/.cache/pip,sharing=locked \
+    pip install -r requirements.txt
 
 # --- Application layer (changes on normal code commits) ---------------------
 COPY atems.py /app/

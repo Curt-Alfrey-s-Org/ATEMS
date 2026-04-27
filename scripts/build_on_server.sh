@@ -29,10 +29,20 @@ else
     echo "❌ Node.js and npm required. Install: sudo apt install nodejs npm"
     exit 1
   fi
+  # Use the shared server-wide npm cache so bot repos all pull from the same
+  # tarball store. See /srv/dep-cache/README.md.
+  DEP_CACHE_NPM="${DEP_CACHE_NPM:-/srv/dep-cache/npm}"
+  NPM_CACHE_ENV=()
+  if [ -d "$DEP_CACHE_NPM" ] && [ -w "$DEP_CACHE_NPM" ]; then
+    NPM_CACHE_ENV=(npm_config_cache="$DEP_CACHE_NPM")
+    echo "Using shared npm cache: $DEP_CACHE_NPM"
+  else
+    echo "note: $DEP_CACHE_NPM not writable — using default npm cache"
+  fi
   echo "Installing frontend deps..."
-  (cd frontend && npm install --no-audit --no-fund -q)
+  (cd frontend && env "${NPM_CACHE_ENV[@]}" npm install --no-audit --no-fund -q)
   echo "Building frontend..."
-  (cd frontend && npm run build) || { echo "❌ Frontend build failed."; exit 1; }
+  (cd frontend && env "${NPM_CACHE_ENV[@]}" npm run build) || { echo "❌ Frontend build failed."; exit 1; }
   echo "✅ frontend/dist → static/app"
 fi
 echo ""

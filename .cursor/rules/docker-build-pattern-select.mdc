@@ -1,0 +1,69 @@
+---
+description: Require the AI to pick (or ask about) one of two Docker build patterns before writing any Docker/pip/npm/apt build step
+globs: "**/Dockerfile*,**/docker-compose*.yml,**/*.compose.yml,**/scripts/*build*.sh,**/scripts/*deploy*.sh,**/frontend/Dockerfile*"
+alwaysApply: false
+---
+
+# Docker build pattern — always pick one before writing
+
+Full reference: `/home/ansible/docs/DOCKER_BUILD_PATTERNS.md`.
+Each repo has a short `DOCKER_BUILD_PATTERN.md` stub pointing there.
+
+## There are two patterns. Never mix them in the same Dockerfile.
+
+- **Pattern A — Server-side dep cache (`/srv/dep-cache`).**
+  Ordinary wheels / tarballs / debs. BuildKit `--mount=type=cache,id=bots-*`
+  with shared IDs. Used by every non-alfa-ai repo by default.
+- **Pattern B — TrueNAS hub (`/mnt/HDDs/Alfa-AI/`).**
+  Artifacts ≥ 200 MB (CUDA wheels, HF model shards, Ollama blobs,
+  multi-GB prebuilt worker images). Used by `alfa-ai/` and any repo the
+  user has flagged as hub-backed.
+
+## Before writing *any* Docker build step, decide:
+
+1. **Is the current repo `alfa-ai/`?** → Use pattern **B**. No prompt needed.
+2. **Does the build touch artifacts ≥ 200 MB each** (CUDA wheels, HF models,
+   Ollama blobs, multi-GB base images)? → **Ask the user** before proceeding:
+
+   > This build needs `<artifact>`, which is ≥ 200 MB. Pull it through the
+   > server cache at `/srv/dep-cache`, or through the TrueNAS hub at
+   > `/mnt/HDDs/Alfa-AI/`? (Large artifacts usually belong on the hub.)
+3. **Otherwise** → default to pattern **A** (server cache). No prompt needed
+   if the repo already uses pattern A (check for `id=bots-pip` / `id=bots-npm`
+   in existing Dockerfiles).
+4. **Unsure?** → Ask. Don't guess. Never silently add a plain
+   `RUN pip install` or `npm ci` without either a cache mount (A) or a
+   hub `--build-context` bind (B).
+
+## Shared IDs (pattern A) — copy these exactly
+
+| ID | Target in container | Package manager |
+|---|---|---|
+| `bots-pip` | `/root/.cache/pip` | pip |
+| `bots-apt` | `/var/cache/apt` | apt archives |
+| `bots-apt-lists` | `/var/lib/apt/lists` | apt index |
+| `bots-npm` | `/root/.npm` | npm |
+| `bots-apk` | `/var/cache/apk` | Alpine apk |
+
+Using a different id (e.g. `my-pip`) defeats cross-repo sharing. Don't.
+
+## Minimum boilerplate
+
+Every Dockerfile with a cache mount must start with:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+```
+
+(Without it, `--mount=type=cache` is silently ignored.)
+
+## After writing, verify
+
+- Pattern A: `/srv/dep-cache/bin/dep-cache status` shows the caches growing.
+- Pattern B: `tcpdump`-check that the build didn't hit pypi / huggingface /
+  pytorch (see canonical doc § "Verifying a build follows the right pattern").
+
+If a new cache gap appears (pattern A), re-seed:
+`/srv/dep-cache/bin/dep-cache seed`.
+If a new hub gap appears (pattern B), file it and seed the hub on `.111`
+per `alfa-ai/docs/HUB_ARTIFACTS.md`.

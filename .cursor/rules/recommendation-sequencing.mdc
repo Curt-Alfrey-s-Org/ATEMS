@@ -1,0 +1,14 @@
+---
+description: One best solution first; second option only after troubleshooting, industry-standard
+alwaysApply: true
+---
+
+# Recommendation sequencing
+
+When proposing how to do something (commands, architecture, deploy, fixes):
+
+1. **Lead with a single best recommendation** — the path aligned with official documentation, security practice, and maintainability for this stack.
+2. **Do not** open with multiple equivalent or competing options unless the user asked for a comparison or there is a true mutually exclusive fork (then ask one clear question or give only those forks).
+3. **If the first approach fails** after the user reports a concrete outcome (error, failed command, wrong behavior), troubleshoot on that path; **only then** offer **one** next-best alternative that is still **industry-standard** (documented, auditable). Avoid stacking “or you could also…” up front.
+
+This complements `rankings-bot/.cursor/rules/concise-user-responses.mdc` and `no-workarounds` / `industry-standards-alert` rules in-repo.

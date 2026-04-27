@@ -1,0 +1,43 @@
+---
+description: No automatic scraping — manual triggers only (account / ToS safety)
+alwaysApply: true
+---
+
+# NO AUTOMATIC SCRAPING RULE
+
+## CRITICAL - VIOLATION PROHIBITED
+
+**NO automatic scraping of any external data sources is allowed under any circumstances.**
+
+## Prohibited Actions:
+
+❌ **Cron jobs** - No scheduled scraping tasks
+❌ **Background schedulers** - No automatic refresh jobs
+❌ **Auto-refresh timers** - No periodic data fetching
+❌ **Systemd services** - No daemon-based scraping
+❌ **API auto-refresh** - No automatic refresh on startup
+❌ **Webhook triggers** - No external trigger-based scraping
+
+## Allowed Actions:
+
+✅ **Manual user triggers only** - Scraping must be initiated by explicit user action
+✅ **Admin "Test Scrape" button** - Only through designated manual UI controls
+✅ **Rate-limited manual** - Must respect site rate limits and terms of service
+
+## Enforcement:
+
+- All automatic scraping code must be disabled or removed
+- Frontend auto-refresh intervals must be set to `false`
+- Background schedulers must be disabled (`SKIP_BACKGROUND_SCHEDULER=1`)
+- No cron jobs for scraping
+- Manual scraping only through admin interface
+
+## Reason:
+
+Previous automatic scraping resulted in account bans. All data collection must be user-controlled to avoid violating terms of service and getting banned.
+
+## Testing:
+
+App testing must use the manual "Test Scrape" button in Settings → Admin to verify scraping functionality works when explicitly requested by the user.
+
+## Last Updated: 2026-03-07

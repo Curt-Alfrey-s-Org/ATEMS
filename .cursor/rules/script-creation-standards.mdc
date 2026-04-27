@@ -1,0 +1,62 @@
+---
+description: Bash/PowerShell script standards — verify prerequisites, logging, failures, and ops hygiene
+globs: "**/*.sh,**/*.ps1"
+alwaysApply: false
+---
+
+# Script creation standards (shell & PowerShell)
+
+When **creating or editing** `*.sh` or `*.ps1` scripts (deploy, setup, CI helpers, operators’ automation):
+
+## Verify; do not assume
+
+- **Preflight:** Check that required binaries exist (`command -v` / `Get-Command`), config files are present, and services/daemons are reachable **before** destructive or long steps.
+- **Post-step health:** After install or `up`, confirm the outcome (e.g. `systemctl is-active`, `docker inspect` `State.Running`, `curl`/`Invoke-WebRequest` on `/health` or `/metrics`, not only exit code of the installer).
+- **Fail loud:** On failure, print a clear message, **non-zero exit**, and where useful show **recent logs** (`journalctl`, `docker logs --tail`, event log) — never “exit 0 and hope.”
+
+## Bash
+
+- Start scripts with **`set -euo pipefail`** unless a narrow section needs looser mode (then use `set +e` / subshell and document why).
+- Use **`#!/usr/bin/env bash`** when using `[[ ]]`, arrays, or `source`.
+- Prefer **`[[ ... ]]`** over `[ ... ]` for Bash; quote variables and **quote/glob** remote paths.
+- Run **`bash -n script.sh`** after edits; prefer **`shellcheck`** when available.
+- For **shared helpers**, use a **sourced library** (e.g. `setup-lib.sh`) with consistent logging and `die`/`warn` helpers instead of copying divergent patterns.
+
+## PowerShell
+
+- Use **`$ErrorActionPreference = 'Stop'`** (or explicit `-ErrorAction Stop` on critical calls) for install/setup scripts.
+- **`#Requires -RunAsAdministrator`** or an explicit admin check when elevation is mandatory.
+- Prefer **`$PSScriptRoot`** for repo-relative paths; avoid hard-coded `C:\Users\...`.
+- Treat **`msiexec` exit `3010`** (reboot pending) as success when the service is already usable, if applicable.
+
+## Logging (for operator and central triage)
+
+- Write a **timestamped session log** to a **predictable path** (e.g. `~/.local/state/<app>/`, `/var/log/<app>/`, `%ProgramData%\...\logs\`).
+- Maintain a **`latest`** pointer or **`latest-run.log`** copy so a monitoring host can **`scp` pull** or ingest in one path.
+- Support optional **`ALFA_MONITORING_LOG_PUSH_DEST=user@host:/path/`** (or equivalent) for **push** after success **and** on failure where safe (no secrets in log).
+- Never log **passwords, API keys, or full connection strings**; redact or omit.
+
+## Idempotency and side effects
+
+- Prefer **`docker compose up -d`**, **`systemctl enable --now`**, and documented **container names** so re-runs are safe.
+- Document **ports**, **firewall** scope (e.g. allow only the Prometheus/monitoring IP), and **conflicts** (name already in use).
+
+## Security and cluster conventions
+
+- When scripts download artifacts **>200 MB** or GPU/CUDA images, follow **`alfa-ai` hub policy** (TrueNAS `.111` seeding) if this repo is part of that cluster; do not add silent `curl | bash` from untrusted URLs.
+- **File transfer direction:** align with **`scp-direction`** — members **pull** from defined sources; do not instruct `.105` to `scp` push bundles to workers unless the project explicitly documents that exception.
+- Do not embed **long-lived secrets** in scripts; use **env files** (gitignored) or the host secret store.
+
+## Operator-facing vs automation
+
+- **Operator runbooks** (commands a human pastes on `.105` / `.111` / `.93`): follow **`operator-commands-one-at-a-time`** — one shell line per step unless the user asked for a full script.
+- **Scripts in-repo** may contain multiple steps; still keep **clear sections** and **actionable** error messages.
+
+## Comments and UX
+
+- **`usage` / synopsis** at top: purpose, args, env vars, example invocations.
+- Keep comments **short** and explain **why** when non-obvious (policy, workaround), not what every line does.
+
+## Testing before merge
+
+- Run **`bash -n`** on edited `*.sh`; smoke the **happy path** and one **failure path** (e.g. stop docker) when feasible.

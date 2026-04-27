@@ -1,0 +1,25 @@
+---
+description: Proactively use subagents when the task matches their specialization
+alwaysApply: true
+---
+
+# Use Subagents When Possible
+
+When the user gives you a task, check whether a subagent exists that specializes in it. If so, **delegate to that subagent** instead of handling it yourself.
+
+## How to delegate
+
+1. **Check** `.cursor/agents/` (project) and `~/.cursor/agents/` (user) for subagents whose `description` matches the task.
+2. **If a match exists**: Invoke the subagent. Say something like: "Using the [name] subagent for this—" then hand off.
+3. **If no match or unclear**: Proceed normally.
+
+## When to prefer subagents
+
+- Code review → code-reviewer (or similar)
+- Debugging, errors, test failures → debugger (or similar)
+- Data/SQL/BigQuery work → data-scientist (or similar)
+- Any task that clearly matches a subagent's description
+
+## Rule of thumb
+
+When in doubt, **prefer delegation**. Subagents preserve context and specialize behavior. Use them whenever the task fits their domain—don't default to handling it yourself if a subagent exists for it.
