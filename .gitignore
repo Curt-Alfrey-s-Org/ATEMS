@@ -173,6 +173,6 @@ cython_debug/
 #.idea/
 
 # TrueNAS hub — synced PyPI wheels (alfa-ai scripts/sync-bot-wheels-from-hub.sh)
-build-contexts/wheels-bots/*.whl
-build-contexts/wheels-bots/.pip-cache/
-build-contexts/wheels-bots/.tmp/
+# Ignore all synced artifacts but keep the directory placeholder.
+build-contexts/wheels-bots/*
+!build-contexts/wheels-bots/.gitkeep
