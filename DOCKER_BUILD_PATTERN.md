@@ -13,6 +13,13 @@ See the canonical spec for recipes, ids, prerequisites, and verification:
 → [`/home/ansible/docs/DOCKER_BUILD_PATTERNS.md`](../docs/DOCKER_BUILD_PATTERNS.md)
   (section "Pattern A — Server-side dep cache")
 
+## TrueNAS hub overlay (LAN / air-gap)
+
+After seeding **`wheels/bots`** on `.111`, mount NFS and run
+**`bash ../alfa-ai/scripts/sync-bot-wheels-from-hub.sh`** so
+**`build-contexts/wheels-bots/`** is populated before **`docker build`**.
+Inventory + seed commands: [`alfa-ai/docs/HUB_ARTIFACTS.md`](../alfa-ai/docs/HUB_ARTIFACTS.md).
+
 ## When to ask about pattern B (TrueNAS hub) instead
 
 An agent MUST ask the user which pattern to use if the build:

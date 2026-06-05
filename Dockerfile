@@ -19,8 +19,9 @@ ENV PYTHONUNBUFFERED=1 \
 # pip cache is shared across all bot repos via BuildKit id=bots-pip
 # (see /srv/dep-cache/README.md for purge tooling).
 COPY requirements.txt .
+COPY build-contexts/wheels-bots/ /tmp/wheels/
 RUN --mount=type=cache,id=bots-pip,target=/root/.cache/pip,sharing=locked \
-    pip install -r requirements.txt
+    pip install --find-links /tmp/wheels -r requirements.txt
 
 # --- Application layer (changes on normal code commits) ---------------------
 COPY atems.py /app/
