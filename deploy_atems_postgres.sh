@@ -57,6 +57,10 @@ if grep -q "your_secure_password" .env || grep -q "changeme123" .env; then
 fi
 
 echo "Step 1: Building ATEMS Docker image..."
+# TrueNAS hub: refresh build-contexts/wheels-bots before build (non-fatal).
+ALFA_AI_ROOT="${ALFA_AI_ROOT:-$APP_ROOT/../alfa-ai}"
+[ -f "$ALFA_AI_ROOT/scripts/sync-bot-wheels-preflight.sh" ] && \
+  bash "$ALFA_AI_ROOT/scripts/sync-bot-wheels-preflight.sh" || true
 compose build atems-api
 
 echo ""
