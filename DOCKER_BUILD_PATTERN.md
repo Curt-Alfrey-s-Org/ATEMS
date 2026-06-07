@@ -15,10 +15,13 @@ See the canonical spec for recipes, ids, prerequisites, and verification:
 
 ## TrueNAS hub overlay (LAN / air-gap)
 
-After seeding **`wheels/bots`** on `.111`, mount NFS and run
-**`bash ../alfa-ai/scripts/sync-bot-wheels-from-hub.sh`** so
-**`build-contexts/wheels-bots/`** is populated before **`docker build`**.
-Inventory + seed commands: [`alfa-ai/docs/HUB_ARTIFACTS.md`](../alfa-ai/docs/HUB_ARTIFACTS.md).
+Wheels are **not stored in git** — `build-contexts/wheels-bots/` contains only a
+`.gitkeep` placeholder after clone. Build scripts automatically call
+**`alfa-ai/scripts/sync-bot-wheels-preflight.sh`** before `docker build`, which
+syncs wheels from the TrueNAS `.111` hub when reachable. **No manual sync is
+required** — it is automatic and **non-fatal** (falls back to PyPI if the hub is
+unavailable). Inventory + seed commands:
+[`alfa-ai/docs/HUB_ARTIFACTS.md`](../alfa-ai/docs/HUB_ARTIFACTS.md).
 
 ## When to ask about pattern B (TrueNAS hub) instead
 
