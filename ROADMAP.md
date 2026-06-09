@@ -6,6 +6,43 @@
 
 ---
 
+## STATUS: DEFERRED
+
+**DEFERRED — on hold until priority repos (rankings-bot, market-pie5-bot, alfa-ai, monitoring, USPBF, victron-ble2mqtt-integration, watauga-perch) reach production. Decision date: 2026-06-09.**
+
+No feature work, refactors, or deploys on this repo until the priority repos above are in production. The sections below capture state as of the deferral date so nothing is lost.
+
+### Current-state snapshot (2026-06-09)
+
+- **Stack:** Flask 3.1 + SQLAlchemy 2.0 + Flask-Admin + Flask-Login + Jinja2 templates, gunicorn, PostgreSQL 16 (migrated Feb 2026, SQLite fallback retained), Alembic/Flask-Migrate, React + Vite frontend scaffold served at `/app`, Docker Compose. Assigned port: `127.0.0.1:5000:5000` (immutable).
+- **Deployment state:** **Running** — `atems-api` (healthy, `127.0.0.1:5000->5000`) and `atems-postgres` (healthy, `0.0.0.0:5436->5432`) up on `.105`. Do not touch while deferred.
+- **Completeness:** Phase 1 (runnable) and Phase 2 (core tool crib) essentially done; Postgres migration complete. Demo data seeded: 50K tools, 203 users, checkout history. Splash screen, log viewer, settings presets, draggable dashboard widgets, JSON API (`/api/health`, `/api/stats`, `/api/tools`, `/api/checkinout`), and 7+ pytest tests in place. Phases 3–6 (calibration, reporting, automation, modularization) not started; website deployment (§11) incomplete.
+
+### Deferred backlog (do not lose)
+
+1. **Deployment & fixes (was current priority):** deploy to website via `web-sites-server/` (nginx-atems.conf, atems.service, DEPLOY_NOW.md); debug deployed env; fix HTTP/HTTPS redirect & header issues; fix API connectivity/CORS/base-URL in production (§11).
+2. **Phase 3 — calibration & compliance:** due-date logic + reminders, calibration vendor model, NIST-style record fields, calibration history report.
+3. **Phase 4 — reporting:** usage, calibration, user activity, inventory reports; PDF export via reportlab; optional Excel. (Templates currently reference non-existent report routes.)
+4. **Phase 5 — automation:** email reminders for overdue tools and calibration due; barcode scan REST endpoint; mobile-friendly check-in/out.
+5. **PLAN_TOMORROW.md items:** barcode/QR scan at checkout; calibration-due email reminders; "return by" date on checkout + overdue-returns list/reminders.
+6. **Phase 7–9 frontend:** draggable widgets polish, advanced log viewer in React, settings presets, WebSocket real-time updates, connection status indicator, error boundaries, React Query/Zustand, code splitting, path aliases, custom hooks.
+7. **Option B — mount frontend** from host so website edits don't require image rebuilds (Rankings-Bot `docs/DOCKER_BASE_AND_SMALL_EDITS.md`).
+8. **Phase 6 — modularization:** module interface, industry-agnostic core, example modules.
+9. **Tech debt:** `models/tool_cat.py` (move to scripts/ or remove), duplicate alembic in requirements.txt, `User.phone unique=True` reconsideration, templates referencing missing report routes.
+10. **AI inline doc references** (rankings-bot pattern — see section below).
+11. **Research + audit subagent pass** (alfa-ai `docs/audit/` pattern — see section below).
+
+### Resume checklist (when work restarts)
+
+- [ ] Re-verify dependency currency: `requirements.txt` (Flask, SQLAlchemy, Flask-Admin, Flask-Login, gunicorn, psycopg2-binary, reportlab) and `frontend/package.json` — check deprecations and CVEs.
+- [ ] Re-read official docs for the exact stack versions before changing code (workspace rule: manuals first) — Flask-Admin 2.x and SQLAlchemy 2.x both moved fast recently.
+- [ ] Re-run the test suite (`./run_atems_tests.sh` / pytest) and the self-test (`run_selftest.sh`); confirm migrations apply against the running Postgres.
+- [ ] Verify port/network constants unchanged: `127.0.0.1:5000:5000`, `tunnel_network`, atems-postgres on 5436.
+- [ ] Re-check WHATS_NEXT.md and PLAN_TOMORROW.md against this backlog and consolidate — three planning docs drift apart while deferred.
+- [ ] Run the research + audit subagent pass before resuming feature work (per section below).
+
+---
+
 ## Backlog — AI inline doc references (apply later)
 
 Mirror **rankings-bot** (Flask/Jinja here, same idea): `../rankings-bot/docs/AI_INLINE_DOC_REF_PROCESS.md` — hub docs + file-header pointers for auth (`Flask-Login`), models/migrations, and deploy.
