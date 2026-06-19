@@ -40,7 +40,7 @@ python-socketio==5.16.2
 python-engineio==4.13.2
 
 # Utilities
-cryptography==46.0.7
+cryptography==48.0.1
 requests==2.33.0
 pillow==12.2.0
 reportlab==4.5.1
