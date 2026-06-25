@@ -25,6 +25,7 @@ RUN --mount=type=cache,id=bots-pip,target=/root/.cache/pip,sharing=locked \
 
 # --- Application layer (changes on normal code commits) ---------------------
 COPY atems.py /app/
+COPY metrics.py /app/
 COPY extensions.py /app/
 COPY forms.py /app/
 COPY routes.py /app/
