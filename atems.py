@@ -111,6 +111,9 @@ def create_app():
     from routes import bp
     app.register_blueprint(bp)
 
+    from metrics import metrics_bp
+    app.register_blueprint(metrics_bp)
+
     # API JSON errors + X-Request-ID (see utils/api_error_handlers.py)
     from utils.api_error_handlers import register_api_error_handlers
     register_api_error_handlers(app)
