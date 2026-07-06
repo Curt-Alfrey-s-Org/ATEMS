@@ -1,0 +1,18 @@
+---
+description: ALFa AI consumer boundary (full lifecycle, no repo coupling). alfa-ai is authoritative; this repo consumes it over HTTP only.
+globs: "**/*.py,frontend/src/**/*.{ts,tsx},docs/ALFA*.md,.env.example"
+alwaysApply: true
+---
+
+# ALFa AI - consumer only
+
+## Hard rules
+
+1. **Use ALFa via HTTP** (LiteLLM `LITELLM_BASE_URL`, brain API) like a user. Never call model backends directly.
+2. **Never edit, commit to, vendor, or submodule the `alfa-ai` repo** from this repo's tasks. alfa-ai is authoritative (one-way coupling).
+3. A change that "needs an alfa-ai change" (new LiteLLM alias, model tier, orchestrator behavior) **stops** and is filed against `alfa-ai` on its owning host, then wired here via **env only**.
+4. **Chat widget design + ALFa avatar** are defined by alfa-ai (docs/ALFA_AI_CHAT_WIDGETS.md). Match the canonical contracts-bot design + `/branding/alfa-ai-avatar.png`; do not fork it.
+
+## Canonical source
+
+alfa-ai `docs/ALFA_AI_CHAT_WIDGETS.md` and `.cursor/rules/alfa-ai-authoritative.mdc`.
