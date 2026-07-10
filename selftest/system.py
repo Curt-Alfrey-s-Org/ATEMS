@@ -176,7 +176,7 @@ def _log_selftest_run(returncode, stdout, stderr, duration_s, timeout_s):
 
 def get_system_health(app):
     """Get system health with self_test. Uses cache."""
-    global _self_test_cache, _http_tests_run, _http_tests_results
+    global _http_tests_run, _http_tests_results
 
     now = time.time()
     if (
@@ -233,7 +233,7 @@ def run_full_selftest():
     import subprocess
     from datetime import datetime
 
-    global _self_test_cache, _http_tests_run, _http_tests_results
+    global _http_tests_run, _http_tests_results
     _self_test_cache["results"] = None
     _self_test_cache["timestamp"] = None
     _http_tests_run = False

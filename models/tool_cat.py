@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 from atems import create_app
+from extensions import db
+from models.tools import Tools
 
 def choose_category(categories):
     print("Choose a category:")
