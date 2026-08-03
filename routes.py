@@ -1,3 +1,4 @@
+import hmac
 import os
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
@@ -61,7 +62,9 @@ def _check_env_password(username: str, password: str) -> tuple[bool, str]:
         return False, ""
     
     expected_role, expected_pass = _ENV_USERS[username]
-    if expected_pass == password:
+    # Constant-time comparison — plain `==` leaks timing information about the
+    # expected password. https://docs.python.org/3/library/hmac.html#hmac.compare_digest
+    if hmac.compare_digest(expected_pass.encode("utf-8"), password.encode("utf-8")):
         return True, expected_role
     
     return False, ""
