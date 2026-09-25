@@ -1,14 +1,51 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, AnonymousUserMixin
-from flask_admin import Admin
+from flask_admin import Admin, AdminIndexView, BaseView
 from flask_migrate import Migrate
 from flask_admin.contrib.sqla import ModelView
 import os
 
+
+# ----------------------------------------------------------------------------
+# Flask-Admin access control (security review 2026-09-25, finding #1)
+# Every view registered on `admin` (including the /admin index) must use one of
+# the Secure* classes below so only logged-in users with role 'admin' get in.
+# ----------------------------------------------------------------------------
+class AdminAccessMixin:
+    """Restrict a Flask-Admin view to authenticated admins."""
+
+    def is_accessible(self):
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return False
+        is_admin = getattr(current_user, "is_admin", None)
+        return bool(callable(is_admin) and is_admin())
+
+    def inaccessible_callback(self, name, **kwargs):
+        from flask import redirect, url_for, flash
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            flash('Admin access required.', 'error')
+            return redirect(url_for('main.dashboard'))
+        return redirect(url_for('main.login'))
+
+
+class SecureAdminIndexView(AdminAccessMixin, AdminIndexView):
+    """Admin landing page (/admin/), admins only."""
+
+
+class SecureModelView(AdminAccessMixin, ModelView):
+    """SQLAlchemy ModelView, admins only."""
+
+
+class SecureBaseView(AdminAccessMixin, BaseView):
+    """Custom Flask-Admin page, admins only."""
+
+
 # Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
-admin = Admin()
+admin = Admin(index_view=SecureAdminIndexView())
 migrate = Migrate()
 
 # Custom anonymous user class

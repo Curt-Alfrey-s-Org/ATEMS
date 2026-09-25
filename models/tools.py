@@ -1,7 +1,6 @@
 #   tools.py
 
-from extensions import admin, db
-from flask_admin.contrib.sqla import ModelView
+from extensions import admin, db, SecureModelView
 from flask_admin.model.ajax import AjaxModelLoader
 from datetime import datetime
 
@@ -30,12 +29,13 @@ class Tools(db.Model):
     def __repr__(self):
         return '<Tool {}, ID: {}, Location: {}, Status: {}, Calibration Due: {}, Calibration Date: {}, Calibration Cert: {}, Calibration Schedule: {}>'.format(self.tool_name, self.tool_id_number, self.tool_location, self.tool_status, self.tool_calibration_due, self.tool_calibration_date, self.tool_calibration_cert, self.tool_calibration_schedule, self.checkout_time, self.checkin_time)
     
-class ToolsView(ModelView):
-    """View for tools"""
+class ToolsView(SecureModelView):
+    """View for tools (admins only; access control comes from SecureModelView)."""
     column_searchable_list = ['tool_name', 'tool_id_number', 'tool_location', 'category', 'tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
     column_filters = ['tool_name', 'tool_id_number', 'tool_location', 'category', 'tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
     column_editable_list = ['tool_name', 'tool_id_number', 'tool_location', 'category', 'tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
-    column_default_sort = ('tool_name', 'tool_id_number', 'tool_location', 'tool_status', True)
+    # Flask-Admin expects a (column, desc) tuple or a list of them.
+    column_default_sort = [('tool_name', False), ('tool_id_number', False), ('tool_location', False), ('tool_status', False)]
     column_sortable_list = ['tool_name', 'tool_id_number', 'tool_location','tool_status', 'tool_calibration_due', 'tool_calibration_date', 'tool_calibration_cert', 'tool_calibration_schedule', 'checkout_time', 'checkin_time']
     column_labels = dict(tool_name='Tool Name', tool_id_number='tool_id_number', tool_location='Tool Location', tool_status='Tool Status', tool_calibration_due='Calibration Due', tool_calibration_date='Calibration Date', tool_calibration_cert='Calibration Cert', tool_calibration_schedule='Calibration Schedule', checkout_time='Checkout Time', checkin_time='Checkin Time')
     column_descriptions = dict(tool_name='Tool Name', tool_id_number='tool_id_number', tool_location='Tool Location', tool_status='Tool Status', tool_calibration_due='Calibration Due', tool_calibration_date='Calibration Date', tool_calibration_cert='Calibration Cert', tool_calibration_schedule='Calibration Schedule', checkout_time='Checkout Time', checkin_time='Checkin Time')
@@ -163,4 +163,4 @@ form_ajax_refs = {
     'checkout_time': Checkout_timeLoader('checkout_time', db.session),
 }
 
-admin.add_view(ModelView(Tools, db.session, name='Add Tools'))
+admin.add_view(ToolsView(Tools, db.session, name='Add Tools'))

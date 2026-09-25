@@ -1,10 +1,11 @@
 #   user.py
 
 import bcrypt
-from extensions import admin, db
-from flask_admin.contrib.sqla import ModelView
+from extensions import admin, db, SecureModelView
 from flask_login import UserMixin
 from flask_admin.model.ajax import AjaxModelLoader
+from wtforms import PasswordField
+from wtforms.validators import ValidationError
 
 
 
@@ -55,12 +56,13 @@ class User(db.Model, UserMixin):
     def __repr__(self):
         return '<User {}, Username: {}, Email: {}, Badge ID: {}, Phone: {}, Department: {}, Supervisor Username: {}, Supervisor Email: {}, Supervisor Phone: {}, Manager Username: {}, Manager Email: {}, Manager Phone: {}>'.format(self.first_name, self.username, self.email, self.badge_id, self.phone, self.department, self.supervisor_username, self.supervisor_email, self.supervisor_phone, self.manager_username, self.manager_email, self.manager_phone)
 
-class UserView(ModelView):
-    """View for users"""
+class UserView(SecureModelView):
+    """View for users (admins only; access control comes from SecureModelView)."""
     column_searchable_list = ['first_name','last_name','username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_filters = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_editable_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
-    column_default_sort = ('first_name','last_name', 'username', True)
+    # Flask-Admin expects a (column, desc) tuple or a list of them.
+    column_default_sort = [('first_name', False), ('last_name', False), ('username', False)]
     column_sortable_list = ['first_name','last_name', 'username', 'email', 'badge_id', 'phone', 'department', 'role', 'supervisor_username', 'supervisor_email', 'supervisor_phone', 'manager_username', 'manager_email', 'manager_phone']
     column_labels = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='Role', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
     column_descriptions = dict(first_name='First Name', last_name='Last Name', username='Username', email='Email', badge_id='Badge ID', phone='Phone', department='Department', role='User Role (admin, user, or CTK Custodian for AFI 21-101)', supervisor_username='Supervisor Username', supervisor_email='Supervisor Email', supervisor_phone='Supervisor Phone', manager_username='Manager Username', manager_email='Manager Email', manager_phone='Manager Phone')
@@ -71,19 +73,22 @@ class UserView(ModelView):
         role=[('admin', 'Admin'), ('user', 'User'), ('ctk_custodian', 'CTK Custodian')]
     )
     
-    def is_accessible(self):
-        """Only admins can access Flask-Admin panel."""
-        from flask_login import current_user
-        return current_user.is_authenticated and current_user.is_admin()
-    
-    def inaccessible_callback(self, name, **kwargs):
-        """Redirect to login if not accessible."""
-        from flask import redirect, url_for, flash
-        from flask_login import current_user
-        if current_user.is_authenticated:
-            flash('Admin access required.', 'error')
-            return redirect(url_for('main.dashboard'))
-        return redirect(url_for('main.login'))
+    # Never expose or edit the bcrypt hash directly; use a write-only password field.
+    form_excluded_columns = ['password_hash']
+    form_extra_fields = {
+        'password': PasswordField('Password', description='Leave blank to keep the current password.'),
+    }
+
+    def on_model_change(self, form, model, is_created):
+        from utils.auth_security import is_known_default_password
+        password = form.password.data if hasattr(form, 'password') else None
+        if password:
+            if is_known_default_password(password):
+                raise ValidationError('That password is a known default and is not allowed.')
+            model.set_password(password)
+        elif is_created:
+            raise ValidationError('A password is required for new users.')
+        return super().on_model_change(form, model, is_created)
 
 class FirstNameLoader(AjaxModelLoader):
     def get_one(self, id):
@@ -246,4 +251,4 @@ form_ajax_refs = {
  
  
  
-admin.add_view(ModelView(User, db.session, name='Add User'))
+admin.add_view(UserView(User, db.session, name='Add User'))
