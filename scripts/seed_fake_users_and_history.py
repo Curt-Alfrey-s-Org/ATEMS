@@ -7,6 +7,7 @@ import sys
 import os
 from datetime import datetime, timedelta
 import random
+import secrets
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -103,7 +104,9 @@ def main():
                 continue
             
             u = User(**user_data)
-            u.set_password('demo123')  # All demo users have same password
+            # Fake users are data only: give each a random, never-disclosed password
+            # (no shared known password; security review 2026-09-25).
+            u.set_password(secrets.token_urlsafe(24))
             db.session.add(u)
             created_users += 1
             

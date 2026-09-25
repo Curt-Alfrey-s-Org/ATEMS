@@ -17,45 +17,49 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # ENVIRONMENT-BASED USER CREDENTIALS (inspired by rankings-bot)
 # ============================================================================
+# There are NO built-in default credentials. Env-based logins exist only when
+# ADMIN_USERNAME/ADMIN_PASSWORD and/or USER_USERNAME/USER_PASSWORD are set.
+# Known default passwords (admin123, user123, ...) are always refused.
 
-# Default credentials (fallback if env vars not set)
-_DEFAULT_USERS = {
-    "admin": ("admin", "admin123"),
-    "user": ("user", "user123"),
-}
+from utils.auth_security import is_known_default_password
 
 _ENV_USERS = {}
+_ENV_USERS_LOADED = False
 
 
 def _load_env_users():
     """
     Load environment-based credentials from env variables.
     Format: ADMIN_USERNAME/ADMIN_PASSWORD, USER_USERNAME/USER_PASSWORD
-    Falls back to defaults if not configured.
+    Nothing is loaded for a pair that is unset or uses a known default password.
     """
-    global _ENV_USERS
-    _ENV_USERS = _DEFAULT_USERS.copy()  # Start with defaults
-    
-    # Admin credentials (override default)
-    admin_user = os.getenv("ADMIN_USERNAME", "").strip()
-    admin_pass = os.getenv("ADMIN_PASSWORD", "").strip()
-    if admin_user and admin_pass:
-        _ENV_USERS[admin_user] = ("admin", admin_pass)
-        logger.info(f"Loaded admin user from env: {admin_user}")
-    
-    # User credentials (override default)
-    user_user = os.getenv("USER_USERNAME", "").strip()
-    user_pass = os.getenv("USER_PASSWORD", "").strip()
-    if user_user and user_pass:
-        _ENV_USERS[user_user] = ("user", user_pass)
-        logger.info(f"Loaded user from env: {user_user}")
-    
+    global _ENV_USERS, _ENV_USERS_LOADED
+    _ENV_USERS = {}
+
+    for user_var, pass_var, role in (
+        ("ADMIN_USERNAME", "ADMIN_PASSWORD", "admin"),
+        ("USER_USERNAME", "USER_PASSWORD", "user"),
+    ):
+        env_user = os.getenv(user_var, "").strip()
+        env_pass = os.getenv(pass_var, "").strip()
+        if not (env_user and env_pass):
+            continue
+        if is_known_default_password(env_pass):
+            logger.error(
+                f"{pass_var} is set to a known default password; ignoring env login for {env_user}. "
+                f"Set a strong {pass_var}."
+            )
+            continue
+        _ENV_USERS[env_user] = (role, env_pass)
+        logger.info(f"Loaded {role} user from env: {env_user}")
+
+    _ENV_USERS_LOADED = True
     logger.info(f"Auth system initialized with {len(_ENV_USERS)} environment-based users")
 
 
 def _check_env_password(username: str, password: str) -> tuple[bool, str]:
     """Check credentials against environment-based users. Returns (success, role)."""
-    if not _ENV_USERS:
+    if not _ENV_USERS_LOADED:
         _load_env_users()
     
     if username not in _ENV_USERS:
@@ -251,6 +255,14 @@ def login():
             flash('Username required.', 'error')
             return render_template('login.html')
         
+        # Refuse known default passwords (admin123, user123, ...) on every path, so
+        # accounts that were created with them can no longer be used.
+        if is_known_default_password(password):
+            logger.warning(f"Refused login with a known default password for username: {username}")
+            flash('This password is a known default and is no longer accepted. '
+                  'Ask an administrator to reset your password.', 'error')
+            return render_template('login.html')
+
         # Step 1: Check environment-based credentials (admin/user)
         env_ok, env_role = _check_env_password(username, password)
         if env_ok:

@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
-"""Create a test user for development. Run from ATEMS dir with app context."""
+"""Create a test user for development. Run from ATEMS dir with app context.
+
+The password comes from ADMIN_PASSWORD (no built-in default):
+    ADMIN_PASSWORD='<strong password>' python scripts/seed_user.py
+"""
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from utils.auth_security import is_known_default_password
+
+admin_password = (os.getenv("ADMIN_PASSWORD") or "").strip()
+if not admin_password or is_known_default_password(admin_password):
+    sys.exit("ADMIN_PASSWORD must be set to a strong, non-default password.")
 
 from atems import create_app
 from extensions import db
@@ -28,7 +38,7 @@ with app.app_context():
             supervisor_email='admin@example.com',
             supervisor_phone='5550000000',
         )
-        u.set_password('admin123')
+        u.set_password(admin_password)
         db.session.add(u)
         db.session.commit()
-        print("Created user: admin / admin123")
+        print("Created user: admin (password from ADMIN_PASSWORD)")
