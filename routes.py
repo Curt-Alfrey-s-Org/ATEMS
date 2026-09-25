@@ -1,5 +1,6 @@
 import hmac
 import os
+from urllib.parse import urlsplit
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
 from forms import CheckInOutForm
@@ -234,6 +235,29 @@ def dashboard():
         return redirect(url_for("main.index"))
 
 
+def _safe_next_url(target):
+    """Return ``target`` only if it is a same-site relative path, else None.
+
+    Prevents open redirects via ``/login?next=...`` (review 2026-09-25). Allowed:
+    paths such as ``/reports`` or ``/atems/app?x=1``. Rejected: absolute URLs
+    (``https://evil.example``), scheme-relative URLs (``//evil.example``),
+    backslash tricks (``/\\evil.example``; browsers treat ``\\`` like ``/``),
+    ``javascript:`` URLs, and anything containing whitespace or control
+    characters (browsers strip tabs/newlines, so ``/<TAB>/evil.example`` would
+    become ``//evil.example``).
+    """
+    if not target or not isinstance(target, str):
+        return None
+    if "\\" in target or any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in target):
+        return None
+    if not target.startswith("/") or target.startswith("//"):
+        return None
+    parts = urlsplit(target)
+    if parts.scheme or parts.netloc:
+        return None
+    return target
+
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     """
@@ -297,7 +321,7 @@ def login():
             login_user(user)
             logger.info(f"User '{username}' logged in via environment-based credentials as {env_role}")
             flash(f'Welcome back, {user.username}!', 'success')
-            next_page = request.args.get('next') or url_for('main.dashboard')
+            next_page = _safe_next_url(request.args.get('next')) or url_for('main.dashboard')
             return redirect(next_page)
         
         # Step 2: Check database-backed users
@@ -306,7 +330,7 @@ def login():
             login_user(user)
             logger.info(f"User '{username}' logged in via database-backed credentials as {user.role}")
             flash(f'Welcome back, {user.username}!', 'success')
-            next_page = request.args.get('next') or url_for('main.dashboard')
+            next_page = _safe_next_url(request.args.get('next')) or url_for('main.dashboard')
             return redirect(next_page)
         
         # Step 3: Log failed attempt and return error
