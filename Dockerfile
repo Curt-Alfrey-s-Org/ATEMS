@@ -32,6 +32,9 @@ COPY routes.py /app/
 COPY gunicorn.conf.py /app/
 COPY models/ /app/models/
 COPY utils/ /app/utils/
+# selftest/ backs /api/system/health, /api/system/run-tests and the startup self-tests.
+# (tests/ is deliberately NOT shipped: its fixtures drop and recreate all tables.)
+COPY selftest/ /app/selftest/
 COPY scripts/ /app/scripts/
 COPY templates/ /app/templates/
 COPY static/ /app/static/

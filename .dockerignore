@@ -46,9 +46,10 @@ vatems/
 .vscode/
 .idea/
 
-# Tests, selftests, and one-off scripts (not needed in runtime image).
+# Tests and one-off scripts (not needed in runtime image). selftest/ IS needed:
+# it backs /api/system/health and the startup self-tests (see Dockerfile).
+# tests/ must never ship: its fixtures drop and recreate all tables.
 tests/
-selftest/
 conftest.py
 pytest.ini
 run_tests.sh

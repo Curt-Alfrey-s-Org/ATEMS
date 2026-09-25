@@ -228,8 +228,64 @@ def get_system_health(app):
     }
 
 
-def run_full_selftest():
-    """Run full self-test suite (run_selftest.sh). Returns dict for API response."""
+def _selftest_subprocess_env():
+    """Environment for the pytest run behind the GUI "Run tests" button.
+
+    The pytest fixtures drop and recreate every table. conftest.py only *defaults*
+    SQLALCHEMY_DATABASE_URI, and atems.py loads .env first, so without this the suite
+    would run against the live database. Force a throwaway SQLite file instead.
+    """
+    import tempfile
+
+    env = dict(os.environ)
+    db_path = Path(tempfile.gettempdir()) / f"atems_selftest_{os.getpid()}.db"
+    env["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    env["ENVIRONMENT"] = "test"
+    env.setdefault("SECRET_KEY", "selftest-only-secret")
+    env["APPLICATION_ROOT"] = ""
+    return env
+
+
+def _run_startup_only(app):
+    """Fallback when the pytest suite is not shipped (e.g. the Docker image)."""
+    from datetime import datetime
+    from selftest.startup import run_startup_selftests
+
+    start = time.time()
+    passed, failed, results = run_startup_selftests(app=app, logger=None)
+    lines = [
+        ("✓ " if r.get("passed") else "✗ ") + r["name"] + ("" if r.get("passed") else f": {r.get('error')}")
+        for r in results
+    ]
+    lines.append("")
+    lines.append(
+        "Startup self-tests only: the pytest suite (tests/, run_selftest.sh) is not part of "
+        "this deployment. Run it from a checkout with ./run_selftest.sh or pytest."
+    )
+    return {
+        "success": failed == 0,
+        "mode": "startup-only",
+        "total": passed + failed,
+        "passed": passed,
+        "failed": failed,
+        "warnings": 0,
+        "duration_s": round(time.time() - start, 2),
+        "failed_tests": [
+            {"name": r["name"], "passed": False, "error": r.get("error")}
+            for r in results if not r.get("passed")
+        ],
+        "output": "\n".join(lines),
+        "stderr": "",
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+def run_full_selftest(app=None):
+    """Run full self-test suite (run_selftest.sh). Returns dict for API response.
+
+    If the suite is not present (the Docker image ships only selftest/, never tests/),
+    run the startup self-tests instead of failing with a missing-file error.
+    """
     import subprocess
     from datetime import datetime
 
@@ -240,6 +296,10 @@ def run_full_selftest():
     _http_tests_results = None
 
     script = PROJECT_ROOT / "run_selftest.sh"
+    if not script.is_file() or not (PROJECT_ROOT / "tests").is_dir():
+        logger.info("[SELFTEST] run_selftest.sh/tests not present; running startup self-tests only")
+        return _run_startup_only(app)
+
     timeout = int(os.getenv("RUN_TESTS_TIMEOUT_SECONDS", "120"))
     timeout = max(60, min(timeout, 600))
 
@@ -251,6 +311,7 @@ def run_full_selftest():
             text=True,
             timeout=timeout,
             cwd=str(PROJECT_ROOT),
+            env=_selftest_subprocess_env(),
         )
         elapsed = time.time() - start
         stdout = result.stdout or ""

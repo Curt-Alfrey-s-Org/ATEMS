@@ -123,8 +123,27 @@ class TestApiPublic:
         assert data.get("error") == "not_found"
         assert data.get("request_id")
 
-    def test_api_user_by_badge_no_param_returns_200(self, client):
+    # /api/user-by-badge now requires login (review 2026-09-25); see TestApiAuthRequired
+    # and tests/test_review_followup.py.
+
+
+class TestApiAuthRequired:
+    """API endpoints that require login (302/401 when anonymous, 200 when auth)."""
+
+    def _login(self, client, seed_user):
+        username, _, password = seed_user
+        client.post("/login", data={"username": username, "password": password}, follow_redirects=True)
+
+    def test_api_user_by_badge_anonymous_redirects(self, client):
+        """GET /api/user-by-badge when not logged in redirects to login (no username leak)."""
+        r = client.get("/api/user-by-badge", query_string={"badge_id": "TST001"}, follow_redirects=False)
+        assert r.status_code == 302
+        assert "login" in (r.location or "").lower()
+
+    @pytest.mark.usefixtures("db_session", "seed_user")
+    def test_api_user_by_badge_no_param_returns_200(self, client, seed_user):
         """GET /api/user-by-badge with no param returns 200, username null."""
+        self._login(client, seed_user)
         r = client.get("/api/user-by-badge")
         assert r.status_code == 200
         data = r.get_json()
@@ -135,6 +154,7 @@ class TestApiPublic:
     @pytest.mark.usefixtures("db_session", "seed_user")
     def test_api_user_by_badge_with_badge_returns_username(self, client, seed_user):
         """GET /api/user-by-badge?badge_id=X returns username when user exists."""
+        self._login(client, seed_user)
         _, badge_id, _ = seed_user
         r = client.get("/api/user-by-badge", query_string={"badge_id": badge_id})
         assert r.status_code == 200
@@ -142,22 +162,15 @@ class TestApiPublic:
         assert data is not None
         assert data.get("username") == "testuser"
 
-    @pytest.mark.usefixtures("db_session")
-    def test_api_user_by_badge_unknown_returns_null(self, client):
+    @pytest.mark.usefixtures("db_session", "seed_user")
+    def test_api_user_by_badge_unknown_returns_null(self, client, seed_user):
         """GET /api/user-by-badge?badge_id=UNKNOWN returns username null."""
+        self._login(client, seed_user)
         r = client.get("/api/user-by-badge", query_string={"badge_id": "UNKNOWN99"})
         assert r.status_code == 200
         data = r.get_json()
         assert data is not None
         assert data.get("username") is None
-
-
-class TestApiAuthRequired:
-    """API endpoints that require login (302/401 when anonymous, 200 when auth)."""
-
-    def _login(self, client, seed_user):
-        username, _, password = seed_user
-        client.post("/login", data={"username": username, "password": password}, follow_redirects=True)
 
     def test_api_stats_anonymous_redirects(self, client):
         """GET /api/stats when not logged in redirects."""
@@ -257,7 +270,28 @@ class TestApiAuthRequired:
 
 
 class TestApiCheckinoutJson:
-    """POST /api/checkinout (JSON API for scan-gun/mobile)."""
+    """POST /api/checkinout (JSON API for scan-gun/mobile). Requires login (review 2026-09-25)."""
+
+    @pytest.fixture(autouse=True)
+    def _logged_in(self, request, client):
+        if "seed_user" in request.fixturenames:
+            username, _, password = request.getfixturevalue("seed_user")
+            client.post("/login", data={"username": username, "password": password})
+        else:
+            from extensions import db
+            from models.user import User
+
+            request.getfixturevalue("db_session")
+            u = User(
+                first_name="Api", last_name="Client", username="apiclient",
+                email="apiclient@example.com", badge_id="API001", phone="5551110000",
+                department="ATEMS", supervisor_username="admin",
+                supervisor_email="admin@example.com", supervisor_phone="5550000000",
+            )
+            u.set_password("apiclient-pass")
+            db.session.add(u)
+            db.session.commit()
+            client.post("/login", data={"username": "apiclient", "password": "apiclient-pass"})
 
     @pytest.mark.usefixtures("db_session", "seed_user", "seed_tool")
     def test_api_checkinout_json_checkout_success(self, client, seed_user, seed_tool):
