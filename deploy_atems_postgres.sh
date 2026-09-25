@@ -45,7 +45,7 @@ compose() {
 if [ ! -f .env ]; then
     echo -e "${YELLOW}Warning: .env file not found. Creating from .env.example...${NC}"
     cp .env.example .env
-    echo -e "${YELLOW}Please edit .env and set POSTGRES_PASSWORD and SECRET_KEY${NC}"
+    echo -e "${YELLOW}Please edit .env and set POSTGRES_PASSWORD, SECRET_KEY and ADMIN_PASSWORD${NC}"
     echo -e "${YELLOW}Press Enter to continue after editing .env...${NC}"
     read
 fi
@@ -90,9 +90,9 @@ echo "Services:"
 echo "  - PostgreSQL: localhost:5436"
 echo "  - ATEMS API:  http://localhost:5000"
 echo ""
-echo "Default credentials:"
-echo "  - Username: admin"
-echo "  - Password: admin123"
+echo "Login:"
+echo "  - There are no default credentials. On first boot (empty database) the admin"
+echo "    account is created from ADMIN_USERNAME / ADMIN_PASSWORD in .env."
 echo ""
 echo "Useful commands (from repo root; include --env-file .env and --env-file .env.compose-host-user if using user: in compose):"
 echo "  - View logs:       $COMPOSE_CMD --env-file .env --env-file .env.compose-host-user logs -f atems-api"
