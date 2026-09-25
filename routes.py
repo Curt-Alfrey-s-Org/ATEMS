@@ -478,8 +478,9 @@ def api_system_health():
 @login_required
 def api_system_run_tests():
     """Run full self-test suite on demand (GUI button)."""
+    from flask import current_app
     from selftest.system import run_full_selftest
-    return jsonify(run_full_selftest())
+    return jsonify(run_full_selftest(app=current_app._get_current_object()))
 
 
 @bp.route('/selftest')

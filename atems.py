@@ -131,12 +131,22 @@ def create_app():
     from utils.api_error_handlers import register_api_error_handlers
     register_api_error_handlers(app)
 
-    # Run startup self-tests (log to atems.log for error review)
+    # Run startup self-tests (log to atems.log for error review).
+    # Failures are logged at ERROR level (they used to be a single WARNING, which hid
+    # e.g. the selftest package missing from the Docker image). They do not stop startup.
     try:
         from selftest.startup import run_startup_selftests
-        run_startup_selftests(app=app, logger=logger)
-    except Exception as e:
-        logger.warning(f"[SELFTEST] Startup self-tests failed: {e}")
+        _passed, _failed, _results = run_startup_selftests(app=app, logger=logger)
+        if _failed:
+            failed_names = ", ".join(r["name"] for r in _results if not r.get("passed"))
+            logger.error("[SELFTEST] %d startup self-test(s) failed: %s", _failed, failed_names)
+    except ImportError as e:
+        logger.error(
+            "[SELFTEST] selftest package could not be imported (%s); /api/system/health and "
+            "/api/system/run-tests will not work. Is selftest/ included in the image?", e,
+        )
+    except Exception:
+        logger.exception("[SELFTEST] Startup self-tests crashed")
 
     return app
 

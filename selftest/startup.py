@@ -4,7 +4,6 @@ Runs at app init and via run_selftest.sh - catches errors before they appear in 
 Startup self-tests for ATEMS API.
 """
 import time
-import subprocess
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -32,12 +31,13 @@ def run_startup_selftests(app=None, logger=None):
         for mod in CRITICAL_MODULES:
             p = PROJECT_ROOT / mod
             if p.exists():
-                r = subprocess.run(
-                    ["python3", "-m", "py_compile", str(p)],
-                    capture_output=True, text=True, timeout=5, cwd=str(PROJECT_ROOT)
-                )
-                if r.returncode != 0:
-                    errors.append(f"{mod}: {r.stderr[:80]}")
+                # Compile in-process: `python3 -m py_compile` writes __pycache__/*.pyc,
+                # which fails with PermissionError in the container (read-only /app for
+                # the non-root compose user) and was reported as a syntax error.
+                try:
+                    compile(p.read_text(encoding="utf-8"), str(p), "exec")
+                except SyntaxError as se:
+                    errors.append(f"{mod}: {str(se)[:80]}")
         elapsed = (time.time() - t0) * 1000
         if errors:
             results.append({"name": "Python Syntax Check", "passed": False, "duration_ms": elapsed, "error": "; ".join(errors[:2])})
