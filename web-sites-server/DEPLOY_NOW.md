@@ -22,6 +22,7 @@ Use this to deploy to the Ubuntu server (e.g. 192.168.0.105) so the app is live 
    ./scripts/deploy-to-server.sh ansible@192.168.0.105
    ```
    This builds the frontend (if present), rsyncs to `~/atems/` on the server, and prints the next steps.
+   It stops with a non-zero exit code if `npm` is missing, the frontend build fails, or `rsync` fails. Set `SKIP_FRONTEND_BUILD=1` to deploy without building the frontend.
 
 2. **On the server** — SSH in and follow the one-time steps in Option B from step 3 onward.
 

@@ -18,11 +18,15 @@
     </div>
 
     <div class="px-6 py-4 border-t border-slate-700">
-      <button type="button" id="run-tests-btn" onclick="runTests()"
+      {% set can_run_full_suite = current_user.is_authenticated and current_user.is_admin() %}
+      <button type="button" id="run-tests-btn" onclick="runTests()"{% if not can_run_full_suite %} disabled title="Admins only"{% endif %}
         class="w-full py-3 px-4 rounded-lg font-semibold bg-sky-600 hover:bg-sky-500 text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
         <span id="run-btn-text">Run Full Test Suite</span>
         <span id="run-btn-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
       </button>
+      {% if not can_run_full_suite %}
+      <p class="mt-2 text-xs text-slate-400">Only administrators can run the full test suite.</p>
+      {% endif %}
     </div>
   </div>
 

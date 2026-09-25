@@ -477,7 +477,18 @@ def api_system_health():
 @bp.route('/api/system/run-tests', methods=['POST'])
 @login_required
 def api_system_run_tests():
-    """Run full self-test suite on demand (GUI button)."""
+    """Run full self-test suite on demand (GUI button). Admins only.
+
+    The full suite can run for up to 10 minutes and spawns a pytest subprocess,
+    so ordinary logged-in users must not be able to trigger it (review 2026-09-25,
+    deferred item).
+    """
+    if not current_user.is_admin():
+        logger.warning(
+            "Non-admin user %r attempted to run the full self-test suite",
+            getattr(current_user, "username", None),
+        )
+        return jsonify(success=False, error="Admin access required to run the full test suite."), 403
     from flask import current_app
     from selftest.system import run_full_selftest
     return jsonify(run_full_selftest(app=current_app._get_current_object()))
