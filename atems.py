@@ -50,6 +50,10 @@ def create_app():
     # Set the debug mode from environment variable
     app.config["DEBUG"] = os.getenv("DEBUG", "False").lower() == "true"
 
+    # CSRF defence-in-depth (review 2026-09-25): browsers do not send the session
+    # cookie on cross-site POSTs/fetches when it is SameSite=Lax.
+    app.config["SESSION_COOKIE_SAMESITE"] = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+
     # When deployed under subpath (e.g. ), set SCRIPT_NAME so url_for generates correct links
     app_root = (os.getenv("APPLICATION_ROOT", "") or "").strip().rstrip("/")
     if app_root and app_root != "/":

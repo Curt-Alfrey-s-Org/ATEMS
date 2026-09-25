@@ -3,6 +3,7 @@ import os
 from urllib.parse import urlsplit
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.datastructures import MultiDict
 from forms import CheckInOutForm
 from models import User, Tools, CheckoutHistory
 from extensions import db
@@ -1049,8 +1050,14 @@ def api_tools():
 
 
 @bp.route('/api/user-by-badge')
+@login_required
 def api_user_by_badge():
-    """Look up username by badge_id (for scan flow: fill username when badge is scanned)."""
+    """Look up username by badge_id (for scan flow: fill username when badge is scanned).
+
+    Requires login (review 2026-09-25): anonymously it let anyone turn a badge ID
+    into a username, which together with /checkinout meant a badge number alone was
+    enough to check tools in/out as that user.
+    """
     badge_id = (request.args.get("badge_id") or "").strip()
     if not badge_id:
         return jsonify(username=None), 200
@@ -1061,25 +1068,37 @@ def api_user_by_badge():
 
 
 @bp.route('/api/checkinout', methods=['POST'])
+@login_required
 def api_checkinout():
-    """JSON API for check-in/check-out (scan-gun, mobile)."""
-    data = request.get_json() or {}
-    username = data.get("username") or request.form.get("username")
-    badge_id = data.get("badge_id") or request.form.get("badge_id")
-    tool_id_number = data.get("tool_id_number") or request.form.get("tool_id_number")
-    job_id = data.get("job_id") or request.form.get("job_id")
-    condition = data.get("condition") or request.form.get("condition")
-    return_by = data.get("return_by") or request.form.get("return_by")
-    form_data = {
-        "username": username,
-        "badge_id": badge_id,
-        "tool_id_number": tool_id_number,
-        "job_id": job_id or "",
-        "condition": condition or "",
-    }
-    if return_by:
-        form_data["return_by"] = return_by
-    form = CheckInOutForm(data=form_data)
+    """JSON API for check-in/check-out (scan-gun, mobile, SPA).
+
+    Requires a logged-in session and a JSON body (Content-Type: application/json).
+    CSRF (review 2026-09-25): HTML forms on another site can only send urlencoded,
+    multipart or text/plain bodies, and a cross-site fetch with application/json
+    needs a CORS preflight this app never approves, so a JSON-only endpoint cannot
+    be driven cross-site. The session cookie is also SameSite=Lax (atems.py).
+    The Flask-WTF session token is therefore not required here; previously it
+    was checked implicitly and made every JSON client fail with a 400.
+    """
+    if not request.is_json:
+        return jsonify(status="error", message="Content-Type must be application/json."), 415
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(status="error", message="Request body must be a JSON object."), 400
+    def _field(name):
+        value = data.get(name)
+        return "" if value is None else str(value).strip()
+
+    form_data = MultiDict({
+        "username": _field("username"),
+        "badge_id": _field("badge_id"),
+        "tool_id_number": _field("tool_id_number"),
+        "job_id": _field("job_id"),
+        "condition": _field("condition"),
+    })
+    if _field("return_by"):
+        form_data["return_by"] = _field("return_by")
+    form = CheckInOutForm(formdata=form_data, meta={"csrf": False})
     if not form.validate():
         first = next((v[0] for v in form.errors.values() if v), "Validation failed")
         return jsonify(status="error", message=first, errors=form.errors), 400
