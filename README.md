@@ -63,6 +63,14 @@ Login behaviour:
 - When `ADMIN_USERNAME`/`ADMIN_PASSWORD` are set in the environment, they work as a login for that account. Setting `ADMIN_USERNAME=admin` plus a strong `ADMIN_PASSWORD` is how to regain access if the only admin still has a default password.
 - The Postgres port is published on `127.0.0.1:5436` only (host-local).
 
+Follow-up hardening (review 2026-09-25, Medium/Low findings):
+- **Login redirect:** `/login?next=...` only follows same-site relative paths (e.g. `/reports`). Absolute or scheme-relative URLs (`https://...`, `//host`, `/\host`) are ignored and you land on `/dashboard`.
+- **`/api/user-by-badge` requires login.** The check-in/out page still works anonymously, but scanning a badge only auto-fills the username when the browser is logged in (e.g. a tool-crib kiosk account with role `user`). Otherwise type the username.
+- **`/api/checkinout` requires login and a JSON body** (`Content-Type: application/json`); other content types get `415`. This is the CSRF defence for that endpoint (cross-site forms cannot send JSON). JSON clients no longer fail with "The CSRF token is missing." Scan-gun/mobile clients must log in via `POST /login` first and reuse the session cookie. The HTML form at `/checkinout` is unchanged.
+- The session cookie is now `SameSite=Lax` (override with `SESSION_COOKIE_SAMESITE` only if you know you need to).
+- **Docker image now includes `selftest/`**, so `/api/system/health` and the startup self-tests work in the container. In the image, "Run tests" runs the startup self-tests only (the pytest suite is never shipped). On a checkout, "Run tests" runs `run_selftest.sh` against a throwaway SQLite file, never the live database. Self-test failures at startup are logged at ERROR level.
+- **`scripts/deploy.sh` fails loudly** (`set -euo pipefail`): a failed `git pull --ff-only`, `pip install`, `flask db upgrade` or frontend build stops the deploy with a non-zero exit code. The frontend is built with full `npm ci` (vite is a devDependency). Opt-outs: `SKIP_GIT_PULL=1`, `SKIP_MIGRATIONS=1`, `SKIP_FRONTEND=1`. If `flask db upgrade` fails on a database that was created by `db.create_all()` and never migrated, check the schema matches the models, then run `FLASK_APP=atems.py flask db stamp head` once.
+
 Upgrading an existing deployment: see the "Operator actions" list in the PR `fix/security-review-2026-09-25`. In short: set a strong `POSTGRES_PASSWORD`, `SECRET_KEY` and `ADMIN_PASSWORD` in `.env`, redeploy, then reset any account that still uses a default password.
 
 ---
