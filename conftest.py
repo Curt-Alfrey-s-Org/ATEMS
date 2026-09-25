@@ -1,5 +1,11 @@
 """Pytest fixtures for ATEMS tests."""
 import os
+
+# Must be set before `atems` is imported (atems.py builds the app at import time).
+# Non-production mode: an empty test DB starts without bootstrapping an admin,
+# instead of failing fast on a missing ADMIN_PASSWORD (see utils/auth_security.py).
+os.environ.setdefault("ENVIRONMENT", "test")
+
 import pytest
 from atems import create_app
 from extensions import db

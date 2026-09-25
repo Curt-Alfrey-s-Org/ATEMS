@@ -84,27 +84,36 @@ def create_app():
     with app.app_context():
         from models import Tools, CheckoutHistory  # ensure all models registered for create_all
         db.create_all()
-        # If no users exist, create default admin so you can log in (same env pattern as other bots)
+        # If no users exist, bootstrap the first admin from ADMIN_USERNAME/ADMIN_PASSWORD.
+        # There is no built-in default password: in production a missing ADMIN_PASSWORD
+        # fails fast (see utils/auth_security.py); in development/test bootstrap is skipped.
         if User.query.count() == 0:
-            admin_username = os.getenv("ADMIN_USERNAME", "admin")
-            admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-            admin_user = User(
-                first_name="System",
-                last_name="Administrator",
-                username=admin_username,
-                email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
-                badge_id="ADMIN001",
-                phone="5550000000",
-                department="ATEMS",
-                role="admin",
-                supervisor_username=admin_username,
-                supervisor_email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
-                supervisor_phone="5550000000",
-            )
-            admin_user.set_password(admin_password)
-            db.session.add(admin_user)
-            db.session.commit()
-            logger.info("Created default admin user from ADMIN_USERNAME/ADMIN_PASSWORD. Change password after first login.")
+            from utils.auth_security import get_bootstrap_admin_credentials
+            creds = get_bootstrap_admin_credentials()
+            if creds is None:
+                logger.warning(
+                    "No users exist and ADMIN_PASSWORD is not set; skipping admin bootstrap "
+                    "(non-production ENVIRONMENT). Set ADMIN_PASSWORD to create the first admin."
+                )
+            else:
+                admin_username, admin_password, admin_email = creds
+                admin_user = User(
+                    first_name="System",
+                    last_name="Administrator",
+                    username=admin_username,
+                    email=admin_email,
+                    badge_id="ADMIN001",
+                    phone="5550000000",
+                    department="ATEMS",
+                    role="admin",
+                    supervisor_username=admin_username,
+                    supervisor_email=admin_email,
+                    supervisor_phone="5550000000",
+                )
+                admin_user.set_password(admin_password)
+                db.session.add(admin_user)
+                db.session.commit()
+                logger.info("Created initial admin user '%s' from ADMIN_USERNAME/ADMIN_PASSWORD.", admin_username)
     logger.info("Application initialized successfully.")
 
     # Register blueprints

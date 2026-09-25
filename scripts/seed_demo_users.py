@@ -2,6 +2,11 @@
 """
 Seed demo users for https://atems.alfaquantumdynamics.com
 Creates admin and user accounts with appropriate permissions.
+
+Passwords come from the environment (no built-in defaults):
+    ADMIN_PASSWORD  - password for the 'admin' demo account (required)
+    USER_PASSWORD   - password for the 'user' demo account (required)
+Known default passwords are refused (see utils/auth_security.py).
 """
 import sys
 import os
@@ -14,7 +19,7 @@ from models.user import User
 DEMO_USERS = [
     {
         'username': 'admin',
-        'password': 'admin123',
+        'password_env': 'ADMIN_PASSWORD',
         'first_name': 'System',
         'last_name': 'Administrator',
         'email': 'admin@alfaquantumdynamics.com',
@@ -28,7 +33,7 @@ DEMO_USERS = [
     },
     {
         'username': 'user',
-        'password': 'user123',
+        'password_env': 'USER_PASSWORD',
         'first_name': 'Demo',
         'last_name': 'User',
         'email': 'user@alfaquantumdynamics.com',
@@ -42,7 +47,16 @@ DEMO_USERS = [
     },
 ]
 
+def _password_from_env(var):
+    from utils.auth_security import is_known_default_password
+    value = (os.getenv(var) or "").strip()
+    if not value or is_known_default_password(value):
+        sys.exit(f"{var} must be set to a strong, non-default password.")
+    return value
+
+
 def main():
+    passwords = {u['password_env']: _password_from_env(u['password_env']) for u in DEMO_USERS}
     app = create_app()
     with app.app_context():
         db.create_all()
@@ -54,12 +68,12 @@ def main():
                 print(f"User '{username}' already exists, skipping.")
                 continue
             
-            password = user_data.pop('password')
-            u = User(**user_data)
-            u.set_password(password)
+            fields = {k: v for k, v in user_data.items() if k != 'password_env'}
+            u = User(**fields)
+            u.set_password(passwords[user_data['password_env']])
             db.session.add(u)
             created += 1
-            print(f"Created {user_data['role']} user: {username} / {password}")
+            print(f"Created {user_data['role']} user: {username} (password from {user_data['password_env']})")
         
         if created > 0:
             db.session.commit()

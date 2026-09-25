@@ -54,6 +54,7 @@ jobs:
         env:
           SQLALCHEMY_DATABASE_URI: "postgresql://atems_test:test_password@localhost:5432/atems_test"
           SECRET_KEY: "ci-secret-key"
+          ENVIRONMENT: "test"
         run: |
           python tests/startup_test.py
 
@@ -61,5 +62,6 @@ jobs:
         env:
           SQLALCHEMY_DATABASE_URI: "postgresql://atems_test:test_password@localhost:5432/atems_test"
           SECRET_KEY: "ci-secret-key"
+          ENVIRONMENT: "test"
         run: |
           pytest tests/ -v --tb=short --maxfail=5

@@ -8,6 +8,12 @@ import sys
 
 os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:////tmp/atems_feature_test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("ENVIRONMENT", "development")
+
+import secrets
+
+# Per-run throwaway password for the local test admin (no hardcoded defaults).
+TEST_ADMIN_PASSWORD = secrets.token_urlsafe(16)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -42,13 +48,14 @@ def run():
         db.create_all()
         from models.user import User
         from models.tools import Tools
-        if not User.query.filter_by(username="admin").first():
+        u = User.query.filter_by(username="admin").first()
+        if not u:
             u = User(first_name="Admin", last_name="User", username="admin", email="admin@example.com",
                      badge_id="ADMIN001", phone="5550000000", department="ATEMS", supervisor_username="admin",
                      supervisor_email="admin@example.com", supervisor_phone="5550000000")
-            u.set_password("admin123")
             db.session.add(u)
-            db.session.commit()
+        u.set_password(TEST_ADMIN_PASSWORD)
+        db.session.commit()
         if not Tools.query.filter_by(tool_id_number="FEAT-TEST-001").first():
             t = Tools(tool_id_number="FEAT-TEST-001", tool_name="Feature Test Tool", tool_location="A1-01",
                      tool_status="In Stock", tool_calibration_due="N/A", tool_calibration_date="N/A",
@@ -61,7 +68,7 @@ def run():
     test("GET /api/health", lambda: assert_true(client.get("/api/health").status_code == 200 and client.get("/api/health").get_json().get("status") == "healthy"))
     test("GET /", lambda: assert_true(client.get("/", follow_redirects=False).status_code in (200, 302)))
     test("GET /login", lambda: assert_true(client.get("/login").status_code == 200))
-    test("POST /login", lambda: assert_true(client.post("/login", data={"username": "admin", "password": "admin123"}, follow_redirects=True).status_code == 200))
+    test("POST /login", lambda: assert_true(client.post("/login", data={"username": "admin", "password": TEST_ADMIN_PASSWORD}, follow_redirects=True).status_code == 200))
     test("GET /dashboard", lambda: assert_true(client.get("/dashboard").status_code == 200))
     test("GET /checkinout", lambda: assert_true(client.get("/checkinout").status_code == 200))
 

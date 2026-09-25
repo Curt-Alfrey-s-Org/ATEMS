@@ -17,10 +17,13 @@ services:
     environment:
       POSTGRES_DB: atems
       POSTGRES_USER: atems_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
+      # Required, no fallback: compose refuses to start if POSTGRES_PASSWORD is unset/empty.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    # Host-local only (security review 2026-09-25 #14). Host tools use 127.0.0.1:5436;
+    # the API reaches Postgres over atems-network.
     ports:
-      - "5436:5432"
+      - "127.0.0.1:5436:5432"
     volumes:
       - atems-postgres-data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -57,9 +60,16 @@ services:
     environment:
       - ENVIRONMENT=production
       - PORT=5000
-      - DATABASE_URL=postgresql://atems_user:${POSTGRES_PASSWORD:-changeme123}@atems-postgres:5432/atems
-      - SQLALCHEMY_DATABASE_URI=postgresql://atems_user:${POSTGRES_PASSWORD:-changeme123}@atems-postgres:5432/atems
-      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://atems_user:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@atems-postgres:5432/atems
+      - SQLALCHEMY_DATABASE_URI=postgresql://atems_user:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@atems-postgres:5432/atems
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      # First-admin bootstrap + optional env logins (no defaults; see README "Security").
+      # ADMIN_PASSWORD is required on first boot against an empty database.
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - USER_USERNAME=${USER_USERNAME:-}
+      - USER_PASSWORD=${USER_PASSWORD:-}
       - DEBUG=False
       - GUNICORN_WORKERS=4
     # Using 127.0.0.1 for security - only nginx can access via Docker network

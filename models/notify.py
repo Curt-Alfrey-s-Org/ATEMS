@@ -1,14 +1,14 @@
 #   notify.py
 
 
-from extensions import admin
-from flask_admin.base import BaseView, expose
+from extensions import admin, SecureBaseView
+from flask_admin.base import expose
 
 
 
 
 
-class NotificationsView(BaseView):
+class NotificationsView(SecureBaseView):
     """View for notifications"""
     @expose('/')
     def index(self):
