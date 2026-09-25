@@ -9,9 +9,11 @@ Quick reference for running and using ATEMS (Automated Tool & Equipment Manageme
 1. **Environment** — Copy `.env.example` to `.env` and set at least:
    - `SQLALCHEMY_DATABASE_URI` (e.g. `sqlite:///atems.db` or MySQL URL)
    - `SECRET_KEY` (random string for sessions)
+   - `ADMIN_PASSWORD` (creates the first admin on an empty database; required in production)
+   - `ENVIRONMENT=development` for local work (production is the default)
 2. **Dependencies** — `pip install -r requirements.txt`
 3. **Database** — Run migrations: `flask db upgrade` (or create DB and run migrations)
-4. **Demo users** (optional) — `python scripts/seed_demo_users.py`
+4. **Demo users** (optional) — `ADMIN_PASSWORD=... USER_PASSWORD=... python scripts/seed_demo_users.py`
 5. **Run** — `python atems.py` or `gunicorn -c gunicorn.conf.py atems:create_app()`
 6. **Open** — http://localhost:5000 (or port from gunicorn)
 
@@ -20,8 +22,9 @@ Quick reference for running and using ATEMS (Automated Tool & Equipment Manageme
 ## Login
 
 - **Root** `/` — Splash screen with login.
-- **Default credentials** — user/user123, admin/admin123 (after seeding demo users).
-- **Production** — Set real users/passwords or integrate with your auth.
+- **No default credentials.** The first admin is created from `ADMIN_USERNAME` / `ADMIN_PASSWORD`. Other users are added under `/admin` → Users or with the seed scripts, which read passwords from env vars.
+- Known default passwords (`admin123`, `user123`, `demo123`, ...) are refused at login.
+- `/admin` is restricted to logged-in users with role `admin`.
 
 ---
 

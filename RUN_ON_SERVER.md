@@ -26,7 +26,8 @@ Everything runs on the server. Repo lives there; build and run there.
 4. **Configure .env:**
    ```bash
    cp .env.example .env
-   # Edit: SECRET_KEY, SQLALCHEMY_DATABASE_URI (e.g. sqlite:////home/ansible/atems/atems.db), DEBUG=False
+   # Edit: SECRET_KEY, SQLALCHEMY_DATABASE_URI (e.g. sqlite:////home/ansible/atems/atems.db), DEBUG=False,
+   #       ADMIN_PASSWORD (required on first boot; no default admin password exists)
    ```
 
 5. **Database:**

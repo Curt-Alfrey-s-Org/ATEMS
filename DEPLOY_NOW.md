@@ -63,7 +63,7 @@ flask db upgrade
 | Step               | Command / action |
 |--------------------|------------------|
 | Sync to server     | `./scripts/deploy-to-server.sh ansible@192.168.0.105` (from ATEMS root) |
-| One-time: .env     | Copy .env.example to .env, set SECRET_KEY, DB URI, DEBUG=False |
+| One-time: .env     | Copy .env.example to .env, set SECRET_KEY, DB URI, DEBUG=False, ADMIN_PASSWORD |
 | One-time: DB       | On server: `flask db upgrade` |
 | One-time: systemd  | Copy `atems.service` → /etc/systemd/system/, daemon-reload, enable, start |
 | One-time: Nginx    | Copy `web-sites-server/nginx-atems.conf` → /etc/nginx/sites-available/atems, link to sites-enabled, test, reload |

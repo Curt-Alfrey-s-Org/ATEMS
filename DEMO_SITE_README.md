@@ -8,8 +8,9 @@ This document summarizes the complete demo site setup for ATEMS.
 ## ✅ Completed Features
 
 ### 1. User Roles & Authentication
-- **Admin Account**: `admin` / `admin123` - Full system access including Flask-Admin panel
-- **User Account**: `user` / `user123` - Standard user with check-in/out and reporting access
+- **Admin Account**: `admin` - Full system access including Flask-Admin panel (password from `ADMIN_PASSWORD`)
+- **User Account**: `user` - Standard user with check-in/out and reporting access (password from `USER_PASSWORD`)
+- Passwords are no longer hardcoded (security review 2026-09-25). `admin123`/`user123`/`demo123` are refused at login.
 
 ### 2. Massive Demo Database
 - **50,000 Tools** from 10 major US industries:
@@ -141,14 +142,14 @@ Follow the complete guide in `NGINX_DEPLOYMENT.md` for:
 ### As User:
 1. Visit https://atems.alfaquantumdynamics.com
 2. View professional splash screen
-3. Click "Try Demo" or sign in with `user` / `user123`
+3. Click "Try Demo" or sign in with the demo `user` account
 4. Explore dashboard with 50K tools and live statistics
 5. Browse tools, view checkout history, generate reports
 6. Hover over `?` icons for contextual help
 7. Try to access `/admin` (will be denied with friendly message)
 
 ### As Regular User:
-1. Sign in with `user` / `user123`
+1. Sign in with the demo `user` account
 2. Check out tools using badge ID and tool ID
 3. Add job/project IDs and tool condition
 4. Check in tools
@@ -156,7 +157,7 @@ Follow the complete guide in `NGINX_DEPLOYMENT.md` for:
 6. Generate calibration and usage reports
 
 ### As Admin:
-1. Sign in with `admin` / `admin123`
+1. Sign in with the `admin` account (credentials from the operator)
 2. Access Flask-Admin panel at `/admin`
 3. Manage users, tools, and checkout history
 4. View system health via Self-Test page
@@ -171,7 +172,7 @@ All located in `/scripts/`:
 | Script | Purpose |
 |--------|---------|
 | `seed_50k_tools.py` | Populate 50,000 tools from 10 industries |
-| `seed_fake_users_and_history.py` | Generate 200 users + 4,500 history records |
+| `seed_fake_users_and_history.py` | Generate 200 users (random, undisclosed passwords) + 4,500 history records |
 | `scrape_tool_crib_images.py` | Download professional tool crib images |
 | `test_all_features.py` | Comprehensive feature testing |
 
@@ -197,7 +198,7 @@ All located in `/scripts/`:
 - Flask-Admin restricted to admins only
 - CSRF protection enabled
 - SQL injection protection via SQLAlchemy ORM
-- **Change default passwords in production!**
+- No default passwords: set `ADMIN_PASSWORD` / `USER_PASSWORD` in the environment (see README "Security & required environment")
 
 ---
 

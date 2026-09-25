@@ -15,7 +15,7 @@ See `/home/ansible/.github/PORT_ASSIGNMENTS.md` for the canonical list.
 - **API host binding:** `127.0.0.1:5000`
 - **Database host binding:** `5436:5432`
 
-**Login:** Root `/` shows a splash screen with login. Credentials: user/user123 · admin/admin123. Run `python scripts/seed_demo_users.py` to create demo users.
+**Login:** Root `/` shows a splash screen with login. There are **no default credentials**. The first admin comes from `ADMIN_USERNAME` / `ADMIN_PASSWORD` (see [Security & required environment](#security--required-environment)). To create demo users, run `ADMIN_PASSWORD=... USER_PASSWORD=... python scripts/seed_demo_users.py`.
 
 ---
 
@@ -28,17 +28,42 @@ cd /home/ansible/atems
 
 # 1. Configure environment
 cp .env.example .env
-nano .env  # Set POSTGRES_PASSWORD and SECRET_KEY
+nano .env  # Set POSTGRES_PASSWORD, SECRET_KEY and ADMIN_PASSWORD (required, no defaults)
 
 # 2. Deploy with script
 ./deploy_atems_postgres.sh
 
 # 3. Access ATEMS
 # http://localhost:5000
-# Login: admin/admin123
+# Login: ADMIN_USERNAME / ADMIN_PASSWORD from .env
 ```
 
-**Database:** PostgreSQL 16 (port 5436) · See [POSTGRESQL_MIGRATION.md](POSTGRESQL_MIGRATION.md)
+**Database:** PostgreSQL 16 (port 5436, bound to 127.0.0.1) · See [POSTGRESQL_MIGRATION.md](POSTGRESQL_MIGRATION.md)
+
+---
+
+## Security & required environment
+
+As of the 2026-09-25 security review, ATEMS ships with **no default credentials**.
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `SECRET_KEY` | yes | Flask session signing key. The app refuses to start without it. |
+| `SQLALCHEMY_DATABASE_URI` | yes (non-Docker) | Database URL. Docker Compose builds it from `POSTGRES_PASSWORD`. |
+| `POSTGRES_PASSWORD` | yes (Docker) | Postgres password. `docker compose` refuses to start if it is unset or empty. There is no fallback value. |
+| `ADMIN_PASSWORD` | on first boot | Creates the first admin when the users table is empty. In production, startup **fails** with a clear error if it is missing. Known defaults such as `admin123` are rejected. |
+| `ADMIN_USERNAME` / `ADMIN_EMAIL` | no | Username and email for that first admin (default `admin` / `admin@example.com`). |
+| `USER_USERNAME` / `USER_PASSWORD` | no | Optional env-based login with the `user` role. |
+| `ENVIRONMENT` | no | Defaults to production. Set `development` (or `test`) locally and in CI so an empty DB can start without `ADMIN_PASSWORD`. |
+
+Login behaviour:
+- `admin/admin123` and `user/user123` no longer exist as built-in logins. Env-based logins exist only for `ADMIN_*` / `USER_*` pairs you set.
+- Known default passwords (`admin123`, `user123`, `demo123`, `changeme123`, ...) are **refused at login**, even for existing accounts. Anyone still using one must have it reset. An admin can do that under `/admin` → Users, which now has a write-only password field.
+- `/admin` (Flask-Admin: users, tools, history, check-in/out, notifications) requires a logged-in user with role `admin`. Anonymous users are redirected to `/login`, and non-admins to `/dashboard`.
+- When `ADMIN_USERNAME`/`ADMIN_PASSWORD` are set in the environment, they work as a login for that account. Setting `ADMIN_USERNAME=admin` plus a strong `ADMIN_PASSWORD` is how to regain access if the only admin still has a default password.
+- The Postgres port is published on `127.0.0.1:5436` only (host-local).
+
+Upgrading an existing deployment: see the "Operator actions" list in the PR `fix/security-review-2026-09-25`. In short: set a strong `POSTGRES_PASSWORD`, `SECRET_KEY` and `ADMIN_PASSWORD` in `.env`, redeploy, then reset any account that still uses a default password.
 
 ---
 
