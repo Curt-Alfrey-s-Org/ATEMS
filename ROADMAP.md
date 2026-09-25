@@ -6,6 +6,27 @@
 
 ---
 
+## Next step: post-merge host steps from the 2026-09-25 security review
+
+Merged 2026-09-25: [#36](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/36) (lock down `/admin`, no default credentials), [#37](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/37) (open redirect, badge/check-in API auth + CSRF, `selftest/` in image, `deploy.sh` fails loudly), [#38](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/38) (admin-only run-tests, deploy scripts fail on build/rsync/migration errors). Feature work stays deferred (below); these are the steps for the next pull/redeploy of the running `.105` stack. Placeholders only; real values go in `.env`. See README → "Security & required environment".
+
+- [ ] **Set in `.env` before redeploying** (compose/app refuse to start without them): `POSTGRES_PASSWORD`, `SECRET_KEY`, `ADMIN_USERNAME` / `ADMIN_PASSWORD` (strong; required if the users table is empty; also a break-glass admin login). Optional: `ADMIN_EMAIL`, `USER_USERNAME` / `USER_PASSWORD`, `SESSION_COOKIE_SAMESITE` (default `Lax`). Local dev/scripts: `ENVIRONMENT=development` (production is the default). `.env.example` has placeholders. (#36, #37)
+- [ ] **Rotate the Postgres `atems_user` password** (the old compose fallback is in git history): new `POSTGRES_PASSWORD` in `.env` **and** inside Postgres, `ALTER USER atems_user WITH PASSWORD '<new>';` (the image only applies the variable on first init). (#36)
+- [ ] **Accounts on known default passwords are now refused at login** (incl. the auto-created `admin` / `user` rows and the 200 seeded fake users): reset real accounts under `/admin` → Users, delete unused demo/fake accounts. If the only admin is affected: set `ADMIN_USERNAME=admin` + a strong `ADMIN_PASSWORD`, redeploy, log in with it, reset the DB password, then optionally remove `ADMIN_PASSWORD` from the env. (#36)
+- [ ] **Postgres is now bound to `127.0.0.1:5436`:** anything connecting from another LAN host needs an SSH tunnel or must run on the host; firewall-check that the old `0.0.0.0:5436` exposure is closed. (#36)
+- [ ] **Rebuild the image** so `selftest/` is included: `./deploy_atems_postgres.sh` (or `docker compose build atems-api`). Step 3 now really runs migrations: a `create_all()` DB matching the models is stamped at `head` automatically; if it stops with "schema differs from the models", inspect the diff, then migrate by hand or `docker compose exec -e FLASK_APP=atems:app atems-api flask db stamp <revision>` and re-run. (#37, #38)
+- [ ] **systemd/venv deploys:** `scripts/deploy.sh` now fails instead of continuing; if `flask db upgrade` fails on a `create_all()` DB, check the schema, then `FLASK_APP=atems.py flask db stamp head` once. Needs Node ≥18/npm (or `SKIP_FRONTEND=1`); `scripts/deploy-to-server.sh` needs npm when `frontend/` exists (or `SKIP_FRONTEND_BUILD=1`). (#37, #38)
+- [ ] **Clients:** `/api/checkinout` scan-gun/mobile clients must `POST /login` (`username`, `password`), keep the session cookie and send `Content-Type: application/json`. A badge-scan kiosk browser needs a logged-in low-privilege `user` account. Only `admin` role can run the full suite from `/selftest`. (#37, #38)
+- [ ] **Public demo site:** the old demo logins no longer work; if a demo login is wanted, create a `user`-role account (`USER_USERNAME` / `USER_PASSWORD`). Never publish an admin password. (#36)
+- [ ] **Smoke:** anonymous `/admin/` redirects to `/login`; admin login works; `/api/system/health` reports the self-test instead of erroring. (#36, #37)
+- [ ] **Tests:** GitHub Actions is disabled; run `pytest tests/` locally (Postgres CI matrix not run). (#36–#38)
+
+Open / deferred:
+
+- [ ] The anonymous `/checkinout` HTML form still accepts username + badge without login (kiosk design, left as is). (#37)
+
+---
+
 ## STATUS: DEFERRED
 
 **DEFERRED — on hold until priority repos (rankings-bot, market-pie5-bot, alfa-ai, monitoring, USPBF, victron-ble2mqtt-integration, watauga-perch) reach production. Decision date: 2026-06-09.**
