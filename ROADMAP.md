@@ -15,6 +15,7 @@ Host: `.103`, `/home/n4s1/atems`, compose service `atems-api`. [REPO_HOST_MAPPIN
 **Merge order:** the PRs share no files, so either order works. Recommended: #40 first, because the #41 PostgreSQL test run needs #40's conftest fix (otherwise 5 env-login tests fail). Both rebuild the same image, so if both are merged, deploy once.
 
 ### Before pulling
+- [ ] Power on VM .103 first (it is currently powered off).
 - [ ] Nothing to back up.
 
 ### After merging PR #40
