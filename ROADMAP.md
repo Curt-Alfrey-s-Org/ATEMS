@@ -6,6 +6,50 @@
 
 ---
 
+## Next step: post-merge host steps from the 2026-09-26 review (PR #40 fixes, PR #41 deps)
+
+Open for review, not merged: [#40](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/40) (fixes, `fix/review-2026-09-26`) and [#41](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/41) (deps, `deps/update-2026-09-26`). The host steps for both PRs are here; this section is committed on the #40 branch. Nothing new is required in `.env`, and there are no files to back up.
+
+Host: `.103`, `/home/n4s1/atems`, compose service `atems-api`. [REPO_HOST_MAPPING.md](https://github.com/Curt-Alfrey-s-Org/contracts-bot/blob/main/docs/REPO_HOST_MAPPING.md) says ATEMS moved there from `.105` on 2026-07-06, and `/home/ansible/atems` on `.105` is a backup clone. The 2026-09-25 section below still says `.105`.
+
+**Merge order:** the PRs share no files, so either order works. Recommended: #40 first, because the #41 PostgreSQL test run needs #40's conftest fix (otherwise 5 env-login tests fail). Both rebuild the same image, so if both are merged, deploy once.
+
+### Before pulling
+- [ ] Nothing to back up.
+
+### After merging PR #40
+- [ ] `cd /home/n4s1/atems && git pull`
+- [ ] Optional `.env` setting: `MAIL_TIMEOUT_SECONDS` (SMTP timeout; default 30).
+- [ ] `docker compose up -d --build atems-api` (ships the template, JS and Python changes).
+- [ ] Verify:
+  - A CSV import preview works on `/import`, including an Excel CSV with a BOM.
+  - Env login works with an `ADMIN_USERNAME` longer than 6 characters.
+  - On `/logs`, a failed login with username `<b>x</b>` shows as text, not bold.
+  - The reports page renders.
+- [ ] Env-login accounts that already exist keep their old badge/phone. Only newly auto-created env users get the new format.
+- [ ] Tests (GitHub Actions isn't running): `pytest`. Expect 204 passed.
+
+### After merging PR #41
+- [ ] If you build from the wheel cache, it must hold the new wheels: `ls build-contexts/wheels-bots | grep -E 'cryptography-50.0.1|pillow-12.3.0'`. Otherwise pip must be able to reach PyPI.
+- [ ] `git pull && docker compose up -d --build atems-api` (ships the new wheels and the rebuilt `static/app/` SPA).
+- [ ] Verify:
+  - `docker compose exec atems-api python -c "import cryptography, PIL; print(cryptography.__version__, PIL.__version__)"` should print `50.0.1 12.3.0`.
+  - `/app` loads.
+- [ ] Non-Docker deploys only: `pip install -r requirements.txt`, then `cd frontend && npm ci && npm run build` (or `scripts/build_on_server.sh`).
+
+### Decisions for you
+- [ ] **Tool transfer on checkout** (`routes.py` `_checkinout_logic`). When user B checks out a tool held by A, it silently moves to B and no check-in is written for A. Block this, or log an implicit check-in?
+- [ ] **Admin-only gating.** Any logged-in user can bulk import or overwrite tools (`/api/import/tools`), read the full app log (`/api/logs`), and trigger reminder e-mails (`/api/calibration-reminders/send`). Make these admin-only?
+- [ ] Mixed clocks: check-in/out uses local time and overdue checks use UTC. There's no effect in the UTC container.
+- [ ] `atems.log` has no rotation (`RotatingFileHandler`, or stdout only?).
+- [ ] Majors not applied (#41):
+  - react-router-dom 7 (fixes 2 moderate advisories; needs a router migration)
+  - React 19, vite 8, Tailwind 4, TypeScript 7
+  - reportlab 5
+  - SQLAlchemy 2.1 (would need psycopg 3 or `postgresql+psycopg2://` URLs)
+
+---
+
 ## Next step: post-merge host steps from the 2026-09-25 security review
 
 Merged 2026-09-25: [#36](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/36) (lock down `/admin`, no default credentials), [#37](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/37) (open redirect, badge/check-in API auth + CSRF, `selftest/` in image, `deploy.sh` fails loudly), [#38](https://github.com/Curt-Alfrey-s-Org/ATEMS/pull/38) (admin-only run-tests, deploy scripts fail on build/rsync/migration errors). Feature work stays deferred (below); these are the steps for the next pull/redeploy of the running `.105` stack. Placeholders only; real values go in `.env`. See README → "Security & required environment".
