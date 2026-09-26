@@ -55,7 +55,9 @@ def _normalize_header_map(headers: List[str]) -> Dict[str, int]:
 
 def parse_csv(content: bytes) -> Tuple[List[str], List[List[str]]]:
     """Parse CSV bytes. Returns (headers, rows)."""
-    text = content.decode("utf-8-skip", errors="replace")
+    # "utf-8-sig" strips an Excel BOM. (This used to say "utf-8-skip", which is not a
+    # codec: every CSV upload raised LookupError, so CSV import never worked.)
+    text = content.decode("utf-8-sig", errors="replace")
     reader = csv.reader(io.StringIO(text))
     rows = list(reader)
     if not rows:
@@ -202,4 +204,6 @@ def import_tools_rows(rows: List[Dict[str, Any]]):  # noqa: no cover - uses db
     except Exception as e:
         db.session.rollback()
         errors.append({"row": 0, "message": f"Commit failed: {e}"})
+        # Nothing was saved; do not report the rolled-back rows as created/updated.
+        created = updated = 0
     return created, updated, errors
