@@ -210,6 +210,12 @@
 </div>
 
 <script>
+  // Escape API/DB values before inserting them as HTML (stored-XSS fix, review 2026-09-26).
+  function escHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+  }
 (function() {
   const reportPanels = document.querySelectorAll('.report-panel');
   const reportTabs = document.querySelectorAll('.report-tab');
@@ -253,7 +259,7 @@
         const tr = document.createElement('tr');
         tr.className = 'border-b border-slate-700/50 hover:bg-slate-700/30';
         const time = e.event_time ? new Date(e.event_time).toLocaleString() : '—';
-        tr.innerHTML = '<td class="py-3 px-4 text-slate-300">' + time + '</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded text-xs ' + (e.action === 'checkin' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-sky-500/20 text-sky-400') + '">' + (e.action || '') + '</span></td><td class="py-3 px-4 text-slate-200">' + (e.tool_id_number || '') + '</td><td class="py-3 px-4 text-slate-300">' + (e.tool_name || '') + '</td><td class="py-3 px-4 text-slate-300">' + (e.username || '') + '</td><td class="py-3 px-4 text-slate-400">' + (e.job_id || '—') + '</td><td class="py-3 px-4 text-slate-400">' + (e.condition || '—') + '</td>';
+        tr.innerHTML = '<td class="py-3 px-4 text-slate-300">' + escHtml(time) + '</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded text-xs ' + (e.action === 'checkin' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-sky-500/20 text-sky-400') + '">' + escHtml(e.action || '') + '</span></td><td class="py-3 px-4 text-slate-200">' + escHtml(e.tool_id_number || '') + '</td><td class="py-3 px-4 text-slate-300">' + escHtml(e.tool_name || '') + '</td><td class="py-3 px-4 text-slate-300">' + escHtml(e.username || '') + '</td><td class="py-3 px-4 text-slate-400">' + escHtml(e.job_id || '—') + '</td><td class="py-3 px-4 text-slate-400">' + escHtml(e.condition || '—') + '</td>';
         tbody.appendChild(tr);
       });
     }).catch(() => {
@@ -273,13 +279,13 @@
       (data.overdue || []).forEach(r => {
         const tr = document.createElement('tr');
         tr.className = 'border-b border-slate-700/50';
-        tr.innerHTML = '<td class="py-2 px-4 text-slate-200">' + (r.tool_id_number || '') + '</td><td class="py-2 px-4 text-amber-400">' + (r.tool_calibration_due || '') + '</td><td class="py-2 px-4 text-slate-400">' + (r.tool_location || '') + '</td>';
+        tr.innerHTML = '<td class="py-2 px-4 text-slate-200">' + escHtml(r.tool_id_number || '') + '</td><td class="py-2 px-4 text-amber-400">' + escHtml(r.tool_calibration_due || '') + '</td><td class="py-2 px-4 text-slate-400">' + escHtml(r.tool_location || '') + '</td>';
         overdueTbody.appendChild(tr);
       });
       (data.due_soon || []).slice(0, 100).forEach(r => {
         const tr = document.createElement('tr');
         tr.className = 'border-b border-slate-700/50';
-        tr.innerHTML = '<td class="py-2 px-4 text-slate-200">' + (r.tool_id_number || '') + '</td><td class="py-2 px-4 text-sky-400">' + (r.tool_calibration_due || '') + '</td><td class="py-2 px-4 text-slate-400">' + (r.tool_location || '') + '</td>';
+        tr.innerHTML = '<td class="py-2 px-4 text-slate-200">' + escHtml(r.tool_id_number || '') + '</td><td class="py-2 px-4 text-sky-400">' + escHtml(r.tool_calibration_due || '') + '</td><td class="py-2 px-4 text-slate-400">' + escHtml(r.tool_location || '') + '</td>';
         soonTbody.appendChild(tr);
       });
       if ((data.overdue || []).length === 0) overdueTbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500">No overdue tools.</td></tr>';
@@ -304,7 +310,7 @@
       data.by_category.forEach(c => {
         const tr = document.createElement('tr');
         tr.className = 'border-b border-slate-700/50 hover:bg-slate-700/30';
-        tr.innerHTML = '<td class="py-3 px-4 text-slate-200">' + (c.category || '') + '</td><td class="py-3 px-4 text-right text-slate-300">' + (c.total || 0) + '</td><td class="py-3 px-4 text-right text-emerald-400">' + (c.in_stock || 0) + '</td><td class="py-3 px-4 text-right text-sky-400">' + (c.checked_out || 0) + '</td>';
+        tr.innerHTML = '<td class="py-3 px-4 text-slate-200">' + escHtml(c.category || '') + '</td><td class="py-3 px-4 text-right text-slate-300">' + escHtml(c.total || 0) + '</td><td class="py-3 px-4 text-right text-emerald-400">' + escHtml(c.in_stock || 0) + '</td><td class="py-3 px-4 text-right text-sky-400">' + escHtml(c.checked_out || 0) + '</td>';
         tbody.appendChild(tr);
       });
     }).catch(() => {

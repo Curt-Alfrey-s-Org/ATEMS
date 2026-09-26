@@ -75,6 +75,28 @@ def _check_env_password(username: str, password: str) -> tuple[bool, str]:
     
     return False, ""
 
+def _env_user_badge_and_phone(username: str) -> tuple[str, str]:
+    """Badge ID and phone for a user auto-created from env credentials.
+
+    user.badge_id is VARCHAR(10) and user.phone is VARCHAR(10) UNIQUE. The old values
+    (``f"ENV-{username}"`` and a fixed ``"0000000000"``) overflowed badge_id for any
+    username longer than 6 characters (PostgreSQL rejects the insert, so env login
+    failed with "Login system error") and collided on phone when a second env user
+    was created. Derive short, unique, alphanumeric values from the username instead.
+    """
+    import hashlib
+
+    digest = hashlib.sha256(username.encode("utf-8")).hexdigest()
+    number = int(digest, 16)
+    for attempt in range(50):
+        badge_id = ("ENV" + digest[attempt:attempt + 7]).upper()
+        phone = str((number + attempt) % 10**10).zfill(10)
+        clash = User.query.filter((User.badge_id == badge_id) | (User.phone == phone)).first()
+        if clash is None:
+            return badge_id, phone
+    raise RuntimeError("Could not allocate a unique badge ID/phone for env user")
+
+
 @bp.app_context_processor
 def inject_datetime():
     return {'datetime': datetime}
@@ -198,9 +220,21 @@ def dashboard():
 
         calibration_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
         cal_overdue = sum(1 for t in cal_tools if is_calibration_overdue(t.tool_calibration_due))
-        cal_due_30 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and today_str <= t.tool_calibration_due <= d30)
-        cal_due_60 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and d30 < t.tool_calibration_due <= d60)
-        cal_due_90 = sum(1 for t in cal_tools if t.tool_calibration_due != 'N/A' and not is_calibration_overdue(t.tool_calibration_due) and t.tool_calibration_due > d60)
+        # Bucket on parsed dates. Comparing the raw strings against 'YYYY-MM-DD' put
+        # dates stored as MM/DD/YYYY (accepted by parse_calibration_due and by the
+        # importer) in the wrong bucket, and counted unparseable text as "90+ days".
+        from utils.calibration import parse_calibration_due
+        _today = datetime.strptime(today_str, '%Y-%m-%d').date()
+        _d30 = datetime.strptime(d30, '%Y-%m-%d').date()
+        _d60 = datetime.strptime(d60, '%Y-%m-%d').date()
+        _upcoming = []
+        for t in cal_tools:
+            _parsed = parse_calibration_due(t.tool_calibration_due)
+            if _parsed is not None and not is_calibration_overdue(t.tool_calibration_due):
+                _upcoming.append(_parsed.date())
+        cal_due_30 = sum(1 for d in _upcoming if _today <= d <= _d30)
+        cal_due_60 = sum(1 for d in _upcoming if _d30 < d <= _d60)
+        cal_due_90 = sum(1 for d in _upcoming if d > _d60)
         calibration_summary = [
             {'label': 'Overdue', 'count': cal_overdue, 'color': 'amber'},
             {'label': 'Due in 30 days', 'count': cal_due_30, 'color': 'yellow'},
@@ -296,15 +330,16 @@ def login():
             if not user:
                 # Create temporary admin user from environment credentials
                 logger.info(f"Creating environment-based user: {username} with role {env_role}")
+                badge_id, phone = _env_user_badge_and_phone(username)
                 user = User(
                     username=username,
                     email=f"{username}@local.env",
-                    first_name=username.capitalize(),
+                    first_name=username.capitalize()[:64],
                     last_name="(env)",
-                    badge_id=f"ENV-{username}",
-                    phone="0000000000",
+                    badge_id=badge_id,
+                    phone=phone,
                     department="Administration",
-                    supervisor_username=username,
+                    supervisor_username=username[:64],
                     supervisor_email=f"{username}@local.env",
                     supervisor_phone="0000000000",
                     role=env_role
@@ -924,8 +959,12 @@ def api_logs():
         
         # Parse log file
         logs = []
-        with open(log_file, 'r', encoding='utf-8') as f:
-            for line in f.readlines()[-limit*2:]:  # Read more than limit to account for filtering
+        # atems.log is never rotated; keep only the tail in memory instead of
+        # readlines() on the whole file for every request (auto-refresh polls this).
+        from collections import deque
+        with open(log_file, 'r', encoding='utf-8', errors='replace') as f:
+            tail = deque(f, maxlen=limit * 2)  # Read more than limit to account for filtering
+            for line in tail:
                 line = line.strip()
                 if not line:
                     continue
@@ -967,7 +1006,7 @@ def api_logs():
         })
     except Exception as e:
         logger.error(f"Error fetching logs: {e}")
-        return jsonify({'error': str(e), 'logs': [], 'count': 0}), 500
+        return jsonify({'error': 'Could not read logs.', 'logs': [], 'count': 0}), 500
 
 
 @bp.route('/api/stats')

@@ -83,6 +83,12 @@ Loading logs...
 </div>
 
 <script>
+  // Escape API/DB values before inserting them as HTML (stored-XSS fix, review 2026-09-26).
+  function escHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+  }
 // Log viewer state
 let autoRefreshInterval = null;
 const LOG_COLORS = {
@@ -155,7 +161,7 @@ function displayLogs(logs) {
   logs.forEach(log => {
     const color = LOG_COLORS[log.level] || 'text-slate-300';
     const time = new Date(log.timestamp).toLocaleString();
-    html += `<div class="${color}">${time} [${log.level}] ${log.message}</div>`;
+    html += `<div class="${color}">${escHtml(time)} [${escHtml(log.level)}] ${escHtml(log.message)}</div>`;
   });
   
   display.innerHTML = html;
