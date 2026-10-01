@@ -5,6 +5,11 @@ import os
 # Non-production mode: an empty test DB starts without bootstrapping an admin,
 # instead of failing fast on a missing ADMIN_PASSWORD (see utils/auth_security.py).
 os.environ.setdefault("ENVIRONMENT", "test")
+# atems.py also calls create_app() at import time, which raises without a DB URI and
+# SECRET_KEY, so the defaults must be in place before the import below (they used to
+# be set only inside the `app` fixture, so a plain `pytest` failed to load conftest).
+os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:////tmp/atems_test.db")
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
 
 import pytest
 from atems import create_app
@@ -25,7 +30,12 @@ def app():
     app = create_app()
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
-    return app
+    yield app
+    # Every test builds a new app, and each app has its own engine/pool (PostgreSQL
+    # pool_size=10). Close them so a PostgreSQL run does not hit "too many clients".
+    with app.app_context():
+        db.session.remove()
+        db.engine.dispose()
 
 
 @pytest.fixture
@@ -43,10 +53,18 @@ def app_context(app):
 
 @pytest.fixture
 def db_session(app, app_context):
-    """Create tables and yield session; tear down after test."""
+    """Create tables and yield session; tear down after test.
+
+    db.session.remove() first: a test that ran a query leaves db.session inside an
+    open transaction holding table locks. On PostgreSQL, DROP TABLE (issued on a
+    different pooled connection) then waits for that transaction forever and the
+    suite hangs (SQLite does not show this).
+    """
+    db.session.remove()
     db.drop_all()
     db.create_all()
     yield db
+    db.session.remove()
     db.drop_all()
 
 

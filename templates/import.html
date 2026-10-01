@@ -48,6 +48,12 @@
 </div>
 
 <script>
+  // Escape API/DB values before inserting them as HTML (stored-XSS fix, review 2026-09-26).
+  function escHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+  }
 (function() {
   var fileInput = document.getElementById("importFile");
   var btnPreview = document.getElementById("btnPreview");
@@ -72,7 +78,7 @@
     (data.valid || []).slice(0, 50).forEach(function(r) {
       var tr = document.createElement("tr");
       tr.className = "border-b border-slate-700/50";
-      tr.innerHTML = "<td class=\"py-2 px-4 text-slate-200\">" + (r.tool_id_number || "") + "</td><td class=\"py-2 px-4 text-slate-300\">" + (r.tool_name || "") + "</td><td class=\"py-2 px-4 text-slate-400\">" + (r.tool_location || "") + "</td><td class=\"py-2 px-4 text-slate-400\">" + (r.tool_status || "") + "</td>";
+      tr.innerHTML = "<td class=\"py-2 px-4 text-slate-200\">" + escHtml(r.tool_id_number || "") + "</td><td class=\"py-2 px-4 text-slate-300\">" + escHtml(r.tool_name || "") + "</td><td class=\"py-2 px-4 text-slate-400\">" + escHtml(r.tool_location || "") + "</td><td class=\"py-2 px-4 text-slate-400\">" + escHtml(r.tool_status || "") + "</td>";
       previewTbody.appendChild(tr);
     });
     if ((data.errors || []).length > 0) {

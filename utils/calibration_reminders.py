@@ -1,5 +1,6 @@
 # calibration_reminders.py - Email reminders for calibration due/overdue
 
+import html as _html
 import os
 import smtplib
 import logging
@@ -85,20 +86,21 @@ def build_email_body(overdue: list, due_soon: list, base_url: str = "") -> Tuple
         lines.append(f"View full report: {base_url.rstrip('/')}/reports")
     plain = "\n".join(lines)
 
-    # Simple HTML
+    # Simple HTML. Tool IDs/names/dates are user-editable (import, admin), so escape them.
+    esc = _html.escape
     html_parts = ["<h2>ATEMS Calibration Reminder</h2>"]
     if overdue:
         html_parts.append("<h3>Overdue</h3><ul>")
         for r in overdue:
-            html_parts.append(f"<li><strong>{r['tool_id_number']}</strong> {r['tool_name']} — Due: {r['tool_calibration_due']}</li>")
+            html_parts.append(f"<li><strong>{esc(str(r['tool_id_number']))}</strong> {esc(str(r['tool_name']))} — Due: {esc(str(r['tool_calibration_due']))}</li>")
         html_parts.append("</ul>")
     if due_soon:
         html_parts.append("<h3>Due soon</h3><ul>")
         for r in due_soon:
-            html_parts.append(f"<li><strong>{r['tool_id_number']}</strong> {r['tool_name']} — Due: {r['tool_calibration_due']}</li>")
+            html_parts.append(f"<li><strong>{esc(str(r['tool_id_number']))}</strong> {esc(str(r['tool_name']))} — Due: {esc(str(r['tool_calibration_due']))}</li>")
         html_parts.append("</ul>")
     if base_url:
-        html_parts.append(f'<p><a href="{base_url.rstrip("/")}/reports">View calibration report</a></p>')
+        html_parts.append(f'<p><a href="{esc(base_url.rstrip("/"))}/reports">View calibration report</a></p>')
     html = "\n".join(html_parts)
 
     return plain, html
@@ -160,15 +162,18 @@ def send_calibration_reminders(app=None) -> dict:
         try:
             use_tls = os.getenv("MAIL_USE_TLS", "true").lower() in ("1", "true", "yes")
             port = int(os.getenv("MAIL_PORT", "587") if use_tls else os.getenv("MAIL_PORT", "25"))
-            server = smtplib.SMTP(os.getenv("MAIL_SERVER"), port)
-            if use_tls:
-                server.starttls()
-            username = os.getenv("MAIL_USERNAME")
-            password = os.getenv("MAIL_PASSWORD")
-            if username and password:
-                server.login(username, password)
-            server.sendmail(sender, recipients, msg.as_string())
-            server.quit()
+            # A timeout keeps an unreachable mail server from pinning a gunicorn worker
+            # until it is killed, and the context manager closes the socket on errors
+            # (it used to leak when starttls/login/sendmail raised).
+            smtp_timeout = float(os.getenv("MAIL_TIMEOUT_SECONDS", "30"))
+            with smtplib.SMTP(os.getenv("MAIL_SERVER"), port, timeout=smtp_timeout) as server:
+                if use_tls:
+                    server.starttls()
+                username = os.getenv("MAIL_USERNAME")
+                password = os.getenv("MAIL_PASSWORD")
+                if username and password:
+                    server.login(username, password)
+                server.sendmail(sender, recipients, msg.as_string())
             logger.info("Calibration reminder email sent to %s (%s overdue, %s due soon)", recipients, len(overdue), len(due_soon))
             return {
                 "sent": True,

@@ -12,7 +12,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function showMessage(text, type) {
         var cls = type === "success" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : type === "warning" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30";
-        msgDiv.innerHTML = "<div class=\"px-4 py-3 rounded-lg " + cls + "\">" + text + "</div>";
+        // textContent, not innerHTML: messages echo usernames, tool IDs and tool names
+        // (DB/user-supplied values), so they must not be parsed as HTML.
+        var box = document.createElement("div");
+        box.className = "px-4 py-3 rounded-lg " + cls;
+        box.textContent = text == null ? "" : String(text);
+        msgDiv.innerHTML = "";
+        msgDiv.appendChild(box);
         msgDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
