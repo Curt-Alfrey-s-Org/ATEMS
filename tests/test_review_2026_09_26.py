@@ -101,6 +101,22 @@ def test_env_user_badge_and_phone_fit_columns(client, db_session, no_env_users):
     assert users[0].badge_id != users[1].badge_id
 
 
+def test_env_user_long_username_email_fits_column(client, db_session, no_env_users):
+    """username is VARCHAR(128); email and supervisor_email are VARCHAR(80)."""
+    username = "u" * 128
+    password = "Env-Adm1n-Test-Passphrase"
+    no_env_users.setenv("ADMIN_USERNAME", username)
+    no_env_users.setenv("ADMIN_PASSWORD", password)
+    response = client.post("/login", data={"username": username, "password": password})
+    assert response.status_code == 302, response.get_data(as_text=True)
+    user = User.query.filter_by(username=username).one()
+    assert len(user.email) <= 80
+    assert len(user.supervisor_email) <= 80
+    assert user.email == user.supervisor_email
+    assert user.email.endswith("@local.env")
+    assert client.get("/dashboard").status_code == 200
+
+
 # --- calibration reminders ---------------------------------------------------
 
 def test_reminder_html_escapes_tool_fields():

@@ -97,6 +97,29 @@ def _env_user_badge_and_phone(username: str) -> tuple[str, str]:
     raise RuntimeError("Could not allocate a unique badge ID/phone for env user")
 
 
+def _env_user_email(username: str) -> str:
+    """Email for an env-created user. user.email and supervisor_email are VARCHAR(80).
+
+    ``f"{username}@local.env"`` is 10 characters longer than the username, but
+    username is VARCHAR(128). Usernames longer than 70 characters still overflowed
+    on PostgreSQL after the badge/phone fix, so env login failed with
+    "Login system error".
+    """
+    suffix = "@local.env"
+    natural = f"{username}{suffix}"
+    if len(natural) <= 80:
+        return natural
+    import hashlib
+
+    digest = hashlib.sha256(username.encode("utf-8")).hexdigest()
+    for attempt in range(33):
+        # "e" + 32 hex + "@local.env" is 43 chars. The window stays inside the digest.
+        email = f"e{digest[attempt:attempt + 32]}{suffix}"
+        if User.query.filter_by(email=email).first() is None:
+            return email
+    raise RuntimeError("Could not allocate a unique email for env user")
+
+
 @bp.app_context_processor
 def inject_datetime():
     return {'datetime': datetime}
@@ -331,16 +354,17 @@ def login():
                 # Create temporary admin user from environment credentials
                 logger.info(f"Creating environment-based user: {username} with role {env_role}")
                 badge_id, phone = _env_user_badge_and_phone(username)
+                email = _env_user_email(username)
                 user = User(
                     username=username,
-                    email=f"{username}@local.env",
+                    email=email,
                     first_name=username.capitalize()[:64],
                     last_name="(env)",
                     badge_id=badge_id,
                     phone=phone,
                     department="Administration",
                     supervisor_username=username[:64],
-                    supervisor_email=f"{username}@local.env",
+                    supervisor_email=email,
                     supervisor_phone="0000000000",
                     role=env_role
                 )
